@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YGO Deck Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#c9a84c;--gold-light:#f0d080;--gold-dark:#8a6a1a;
+  --deep:#0a0a14;--panel:#14142a;--panel-light:#1e1e38;--panel-mid:#181830;
+  --accent:#5b3be8;--accent2:#e83b6a;
+  --text:#e8e0d0;--text-dim:#8880a0;
+  --monster:#3a2a0a;--spell:#1a5c3a;--trap:#5a1a3a;--extra:#0a2a5a;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Rajdhani',sans-serif;background:var(--deep);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(91,59,232,.18) 0%,transparent 70%),
+  radial-gradient(ellipse 40% 30% at 80% 80%,rgba(201,168,76,.08) 0%,transparent 60%),
+  repeating-linear-gradient(0deg,transparent,transparent 50px,rgba(201,168,76,.02) 50px,rgba(201,168,76,.02) 51px),
+  repeating-linear-gradient(90deg,transparent,transparent 50px,rgba(201,168,76,.02) 50px,rgba(201,168,76,.02) 51px);}
+
+/* ── HEADER ── */
+header{position:relative;z-index:10;text-align:center;padding:22px 20px 16px;
+  border-bottom:1px solid rgba(201,168,76,.2);background:linear-gradient(to bottom,rgba(10,10,20,.97),transparent);}
+header h1{font-family:'Cinzel Decorative',serif;font-size:clamp(1.3rem,3.5vw,2.3rem);font-weight:900;
+  background:linear-gradient(135deg,var(--gold-dark),var(--gold-light),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px;}
+header p{color:var(--text-dim);font-size:.78rem;margin-top:3px;letter-spacing:3px;text-transform:uppercase;}
+.stats-bar{display:flex;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap;}
+.stat-chip{background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.22);border-radius:20px;
+  padding:2px 12px;font-size:.78rem;font-weight:600;letter-spacing:1px;}
+.stat-chip span{color:var(--gold);}
+
+/* ── LAYOUT ── */
+.app{position:relative;z-index:1;display:grid;grid-template-columns:310px 1fr;height:calc(100vh - 106px);}
+
+/* ── LEFT PANEL ── */
+.left-panel{background:var(--panel);border-right:1px solid rgba(201,168,76,.15);display:flex;flex-direction:column;overflow:hidden;}
+.panel-head{padding:11px 13px;border-bottom:1px solid rgba(201,168,76,.1);background:var(--panel-light);flex-shrink:0;}
+.panel-head h2{font-family:'Cinzel Decorative',serif;font-size:.76rem;color:var(--gold);letter-spacing:2px;margin-bottom:8px;}
+.tab-row{display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(201,168,76,.2);}
+.tab-btn{flex:1;padding:6px 4px;background:transparent;color:var(--text-dim);border:none;border-right:1px solid rgba(201,168,76,.15);
+  font-family:'Rajdhani',sans-serif;font-size:.73rem;font-weight:700;letter-spacing:.4px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.tab-btn:last-child{border-right:none;}
+.tab-btn.active{background:rgba(201,168,76,.18);color:var(--gold);}
+.tab-btn:hover:not(.active){background:rgba(201,168,76,.07);color:var(--gold);}
+.panel-body{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,.3) transparent;}
+.panel-body::-webkit-scrollbar{width:4px;}
+.panel-body::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3);border-radius:2px;}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* BROWSE */
+.browse-controls{padding:9px 9px 5px;}
+.search-wrap{position:relative;}
+.search-wrap input{width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(201,168,76,.3);border-radius:6px;
+  padding:7px 34px 7px 11px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.9rem;font-weight:500;outline:none;transition:border-color .2s;}
+.search-wrap input:focus{border-color:var(--gold);}
+.search-wrap input::placeholder{color:var(--text-dim);}
+.search-ico{position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--gold);pointer-events:none;}
+.filter-row{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;}
+.flt{flex:1;min-width:48px;padding:3px 4px;border:1px solid rgba(201,168,76,.2);border-radius:4px;background:transparent;
+  color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-size:.71rem;font-weight:600;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.flt:hover{background:rgba(201,168,76,.08);color:var(--gold);}
+.flt.active{background:rgba(201,168,76,.18);color:var(--gold);border-color:var(--gold);}
+.flt.spell.active{background:rgba(26,92,58,.4);border-color:#2a9c5a;color:#5adc8a;}
+.flt.trap.active{background:rgba(90,26,58,.4);border-color:#9c2a5a;color:#dc5a8a;}
+#card-list{padding:4px 7px 9px;}
+.citem{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;border:1px solid transparent;
+  transition:all .15s;margin-bottom:3px;position:relative;overflow:hidden;}
+.citem::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:2px 0 0 2px;}
+.citem.monster::before{background:var(--gold);}
+.citem.spell::before{background:#2a9c5a;}
+.citem.trap::before{background:#9c2a5a;}
+.citem.extra::before{background:#3a7adc;}
+.citem:hover{background:rgba(201,168,76,.07);border-color:rgba(201,168,76,.17);}
+.cthumb{width:32px;height:46px;border-radius:3px;flex-shrink:0;overflow:hidden;border:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.cthumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.cthumb.ni.monster{background:var(--monster);}
+.cthumb.ni.spell{background:var(--spell);}
+.cthumb.ni.trap{background:var(--trap);}
+.cthumb.ni.extra{background:var(--extra);}
+.cinfo{flex:1;min-width:0;}
+.cname{font-size:.83rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
+.ctype{font-size:.65rem;color:var(--text-dim);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.catk{font-size:.68rem;color:var(--gold);font-weight:600;margin-top:2px;}
+.cactions{display:flex;gap:3px;align-items:center;flex-shrink:0;}
+.cbtn{width:20px;height:20px;border-radius:4px;border:none;background:transparent;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:.72rem;transition:all .15s;}
+.cbtn.edit{color:var(--text-dim);border:1px solid rgba(255,255,255,.1);}
+.cbtn.edit:hover{background:rgba(201,168,76,.15);color:var(--gold);}
+.cbtn.del{color:rgba(232,59,106,.6);border:1px solid rgba(232,59,106,.2);}
+.cbtn.del:hover{background:rgba(232,59,106,.15);color:var(--accent2);}
+.cbtn.add{width:24px;height:24px;border-radius:50%;border:1px solid rgba(201,168,76,.4);color:var(--gold);font-size:1rem;}
+.cbtn.add:hover{background:var(--gold);color:var(--deep);transform:scale(1.1);}
+.no-res{text-align:center;padding:24px;color:var(--text-dim);font-size:.85rem;}
+
+/* CREATE FORM */
+.create-form{padding:11px;}
+.ftitle{font-family:'Cinzel Decorative',serif;font-size:.71rem;color:var(--gold);letter-spacing:1.5px;
+  margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+.ftitle::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(201,168,76,.3),transparent);}
+.fg{margin-bottom:8px;}
+.fg label{display:block;font-size:.68rem;font-weight:600;color:var(--text-dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:3px;}
+.fg input,.fg select,.fg textarea{width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(201,168,76,.22);
+  border-radius:5px;padding:6px 9px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.86rem;font-weight:500;outline:none;transition:border-color .2s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold);}
+.fg select option{background:var(--panel);color:var(--text);}
+.fg textarea{resize:vertical;min-height:48px;line-height:1.4;}
+.frow2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.img-drop{border:2px dashed rgba(201,168,76,.25);border-radius:7px;padding:11px 9px;text-align:center;
+  cursor:pointer;transition:all .2s;position:relative;overflow:hidden;margin-bottom:8px;}
+.img-drop:hover{border-color:rgba(201,168,76,.5);background:rgba(201,168,76,.04);}
+.img-drop.over{border-color:var(--gold);background:rgba(201,168,76,.09);}
+.img-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.img-drop-ico{font-size:1.3rem;margin-bottom:2px;}
+.img-drop-txt{font-size:.7rem;color:var(--text-dim);}
+.img-drop-txt strong{color:var(--gold);}
+.img-prev-wrap{position:relative;display:inline-block;margin-top:5px;}
+.img-prev{width:52px;height:75px;object-fit:cover;border-radius:4px;border:2px solid var(--gold);display:block;}
+.img-rm{position:absolute;top:-5px;right:-5px;width:16px;height:16px;background:var(--accent2);border:none;
+  border-radius:50%;color:white;font-size:.58rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.btn-submit{width:100%;padding:8px;border:none;border-radius:6px;margin-top:3px;
+  background:linear-gradient(135deg,var(--gold-dark),var(--gold));color:var(--deep);
+  font-family:'Rajdhani',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.btn-submit:hover{background:linear-gradient(135deg,var(--gold),var(--gold-light));transform:translateY(-1px);}
+.btn-submit.editing{background:linear-gradient(135deg,#2a4a8a,#4a7adc);}
+.btn-cancel{width:100%;padding:6px;border:1px solid rgba(255,255,255,.13);border-radius:6px;margin-top:4px;
+  background:transparent;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;display:none;transition:all .2s;}
+.btn-cancel:hover{background:rgba(255,255,255,.05);color:var(--text);}
+
+/* ── RIGHT SIDE ── */
+.right-side{display:flex;flex-direction:column;overflow:hidden;}
+
+/* DECK TABS BAR */
+.deck-tabs-bar{display:flex;align-items:center;background:var(--panel-mid);
+  border-bottom:1px solid rgba(201,168,76,.15);overflow-x:auto;flex-shrink:0;
+  scrollbar-width:none;gap:0;}
+.deck-tabs-bar::-webkit-scrollbar{display:none;}
+.dtab{display:flex;align-items:center;gap:6px;padding:9px 14px;cursor:pointer;
+  border-right:1px solid rgba(201,168,76,.1);border-bottom:2px solid transparent;
+  color:var(--text-dim);font-size:.8rem;font-weight:600;letter-spacing:.5px;
+  white-space:nowrap;transition:all .2s;flex-shrink:0;font-family:'Rajdhani',sans-serif;}
+.dtab:hover{color:var(--text);background:rgba(201,168,76,.05);}
+.dtab.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(201,168,76,.07);}
+.dtab-close{width:16px;height:16px;border-radius:50%;border:none;background:transparent;
+  color:var(--text-dim);font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;flex-shrink:0;padding:0;}
+.dtab-close:hover{background:rgba(232,59,106,.25);color:var(--accent2);}
+.dtab-count{font-size:.65rem;background:rgba(201,168,76,.15);border-radius:8px;padding:1px 6px;color:var(--gold);}
+.dtab.active .dtab-count{background:rgba(201,168,76,.25);}
+.btn-new-deck{padding:8px 14px;background:transparent;border:none;border-left:1px solid rgba(201,168,76,.15);
+  color:var(--gold);font-size:1rem;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.btn-new-deck:hover{background:rgba(201,168,76,.1);}
+
+/* DECK TOOLBAR */
+.deck-toolbar{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;
+  background:var(--panel-light);border-bottom:1px solid rgba(201,168,76,.1);gap:9px;flex-wrap:wrap;flex-shrink:0;}
+.deck-name{flex:1;min-width:130px;background:rgba(0,0,0,.3);border:1px solid rgba(201,168,76,.22);border-radius:6px;
+  padding:6px 11px;color:var(--gold-light);font-family:'Cinzel Decorative',serif;font-size:.8rem;outline:none;transition:border-color .2s;}
+.deck-name:focus{border-color:var(--gold);}
+.tbar{display:flex;gap:5px;flex-wrap:wrap;}
+.btn{padding:5px 12px;border-radius:5px;border:none;font-family:'Rajdhani',sans-serif;font-weight:700;
+  font-size:.78rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.btn-g{background:linear-gradient(135deg,var(--gold-dark),var(--gold));color:var(--deep);}
+.btn-g:hover{background:linear-gradient(135deg,var(--gold),var(--gold-light));transform:translateY(-1px);box-shadow:0 3px 10px rgba(201,168,76,.25);}
+.btn-o{background:transparent;color:var(--text-dim);border:1px solid rgba(255,255,255,.13);}
+.btn-o:hover{background:rgba(255,255,255,.05);color:var(--text);}
+.btn-d{background:transparent;color:var(--accent2);border:1px solid rgba(232,59,106,.28);}
+.btn-d:hover{background:rgba(232,59,106,.09);}
+
+/* DECK AREA */
+.deck-area{flex:1;overflow-y:auto;padding:14px 16px;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,.3) transparent;}
+.deck-area::-webkit-scrollbar{width:4px;}
+.deck-area::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3);border-radius:2px;}
+.dsec{margin-bottom:19px;}
+.dhead{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.dtitle{font-family:'Cinzel Decorative',serif;font-size:.68rem;letter-spacing:2px;text-transform:uppercase;}
+.dtitle.monster{color:var(--gold);}
+.dtitle.spell{color:#5adc8a;}
+.dtitle.trap{color:#dc5a8a;}
+.dtitle.extra{color:#5a9adc;}
+.dcount{font-size:.68rem;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:1px 7px;color:var(--gold);font-weight:600;}
+.dline{flex:1;height:1px;background:linear-gradient(to right,rgba(201,168,76,.2),transparent);}
+.dgrid{display:flex;flex-wrap:wrap;gap:5px;}
+.dcard{position:relative;width:54px;cursor:pointer;transition:transform .15s;animation:ci .2s ease-out;}
+@keyframes ci{from{opacity:0;transform:scale(.7) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.dcard:hover{transform:translateY(-4px) scale(1.06);z-index:5;}
+.dcard-img{width:54px;height:78px;border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,.13);
+  display:flex;align-items:center;justify-content:center;}
+.dcard-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.dcard-img.ni{font-size:.55rem;text-align:center;padding:4px;flex-direction:column;color:rgba(255,255,255,.7);font-weight:600;line-height:1.2;}
+.dcard.monster .dcard-img.ni{background:linear-gradient(145deg,#3a2a0a,#5a4010);}
+.dcard.spell   .dcard-img.ni{background:linear-gradient(145deg,#0a3a1a,#1a6030);}
+.dcard.trap    .dcard-img.ni{background:linear-gradient(145deg,#3a0a1a,#6a1030);}
+.dcard.extra   .dcard-img.ni{background:linear-gradient(145deg,#0a1a4a,#103060);}
+.dcard-n{position:absolute;top:2px;right:2px;width:16px;height:16px;background:rgba(0,0,0,.85);
+  border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.58rem;font-weight:700;color:var(--gold);pointer-events:none;}
+.dcard-rm{position:absolute;bottom:2px;right:2px;width:16px;height:16px;background:rgba(232,59,106,.85);
+  border-radius:50%;display:none;align-items:center;justify-content:center;font-size:.62rem;color:white;cursor:pointer;border:none;}
+.dcard:hover .dcard-rm{display:flex;}
+.empty{text-align:center;padding:36px 20px;color:var(--text-dim);}
+.empty .ico{font-size:2.2rem;margin-bottom:8px;opacity:.28;}
+
+/* ── DECKS OVERVIEW PANEL ── */
+.decks-overview{padding:16px;}
+.do-title{font-family:'Cinzel Decorative',serif;font-size:.75rem;color:var(--gold);letter-spacing:2px;
+  margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.do-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(201,168,76,.3),transparent);}
+.deck-cards-list{display:flex;flex-direction:column;gap:8px;}
+.deck-card-item{background:var(--panel-light);border:1px solid rgba(201,168,76,.15);border-radius:8px;
+  padding:12px 14px;cursor:pointer;transition:all .2s;position:relative;}
+.deck-card-item:hover{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.06);}
+.deck-card-item.current{border-color:var(--gold);background:rgba(201,168,76,.1);}
+.dci-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.dci-name{font-family:'Cinzel Decorative',serif;font-size:.82rem;color:var(--gold-light);font-weight:700;}
+.dci-actions{display:flex;gap:4px;}
+.dci-btn{width:24px;height:24px;border-radius:4px;border:none;background:transparent;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:all .15s;}
+.dci-btn.open{color:var(--gold);border:1px solid rgba(201,168,76,.3);}
+.dci-btn.open:hover{background:rgba(201,168,76,.15);}
+.dci-btn.dup{color:#5a9adc;border:1px solid rgba(90,154,220,.3);}
+.dci-btn.dup:hover{background:rgba(90,154,220,.12);}
+.dci-btn.del{color:var(--accent2);border:1px solid rgba(232,59,106,.25);}
+.dci-btn.del:hover{background:rgba(232,59,106,.12);}
+.dci-stats{display:flex;gap:6px;flex-wrap:wrap;}
+.dci-chip{font-size:.67rem;font-weight:600;padding:1px 8px;border-radius:10px;}
+.dci-chip.m{background:rgba(201,168,76,.12);color:var(--gold);}
+.dci-chip.s{background:rgba(42,156,90,.15);color:#5adc8a;}
+.dci-chip.t{background:rgba(156,42,90,.15);color:#dc5a8a;}
+.dci-chip.e{background:rgba(42,90,156,.15);color:#5a9adc;}
+.dci-chip.total{background:rgba(255,255,255,.07);color:var(--text-dim);}
+.dci-date{font-size:.62rem;color:var(--text-dim);margin-top:5px;opacity:.7;}
+.dci-current-badge{font-size:.62rem;font-weight:700;color:var(--gold);background:rgba(201,168,76,.15);
+  border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:1px 7px;letter-spacing:.5px;}
+
+/* ── TOOLTIP ── */
+.tip{position:fixed;z-index:999;pointer-events:none;display:none;background:var(--panel);
+  border:1px solid rgba(201,168,76,.35);border-radius:8px;padding:11px;width:192px;
+  box-shadow:0 8px 32px rgba(0,0,0,.8);}
+.tip.on{display:block;}
+.tip-img{width:100%;height:85px;object-fit:cover;border-radius:4px;margin-bottom:6px;display:none;}
+.tip-img.on{display:block;}
+.tip-name{font-size:.82rem;font-weight:700;color:var(--gold-light);margin-bottom:4px;line-height:1.2;}
+.tip-type{font-size:.66rem;color:var(--text-dim);margin-bottom:4px;letter-spacing:.5px;text-transform:uppercase;}
+.tip-desc{font-size:.69rem;color:var(--text);line-height:1.5;opacity:.8;max-height:72px;overflow:hidden;}
+.tip-stats{display:flex;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(201,168,76,.14);font-size:.71rem;font-weight:700;}
+.tatk{color:#ff6a4a;}.tdef{color:#4a9aff;}.tlvl{color:var(--gold);}
+
+/* ── MODALS ── */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;display:none;
+  align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.moverlay.on{display:flex;}
+.modal{background:var(--panel);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:20px;
+  max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.9);animation:mi .25s ease-out;}
+@keyframes mi{from{opacity:0;transform:scale(.9) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal h3{font-family:'Cinzel Decorative',serif;font-size:.9rem;color:var(--gold);margin-bottom:11px;}
+.modal p{font-size:.88rem;color:var(--text);line-height:1.6;margin-bottom:15px;}
+.mtx{width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(201,168,76,.2);border-radius:6px;
+  padding:9px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.82rem;resize:vertical;min-height:76px;outline:none;margin-bottom:12px;}
+.mfoot{display:flex;gap:7px;justify-content:flex-end;}
+
+/* TOAST */
+.toast{position:fixed;bottom:18px;right:18px;background:var(--panel-light);border:1px solid rgba(201,168,76,.28);
+  border-left:3px solid var(--gold);border-radius:6px;padding:8px 13px;font-size:.8rem;font-weight:600;
+  color:var(--text);z-index:200;transform:translateX(130%);transition:transform .3s;max-width:260px;}
+.toast.on{transform:translateX(0);}
+.toast.err{border-left-color:var(--accent2);}
+.toast.ok{border-left-color:#2a9c5a;}
+
+@media(max-width:680px){
+  .app{grid-template-columns:1fr;height:auto;}
+  .left-panel{height:55vh;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚔ YGO Deck Builder</h1>
+  <p>Construisez vos decks de légende</p>
+  <div class="stats-bar">
+    <div class="stat-chip">Main&nbsp;<span id="s-main">0</span>/60</div>
+    <div class="stat-chip">Extra&nbsp;<span id="s-extra">0</span>/15</div>
+    <div class="stat-chip">Monstres&nbsp;<span id="s-mon">0</span></div>
+    <div class="stat-chip">Sorts&nbsp;<span id="s-sp">0</span></div>
+    <div class="stat-chip">Pièges&nbsp;<span id="s-tr">0</span></div>
+  </div>
+</header>
+
+<div class="app">
+  <!-- ═══ LEFT ═══ -->
+  <div class="left-panel">
+    <div class="panel-head">
+      <h2>📖 Base de cartes</h2>
+      <div class="tab-row">
+        <button class="tab-btn active" data-tab="browse">🔍 Parcourir</button>
+        <button class="tab-btn" data-tab="create">✦ Créer</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <!-- BROWSE -->
+      <div class="tab-pane active" id="tab-browse">
+        <div class="browse-controls">
+          <div class="search-wrap">
+            <input id="search-input" type="text" placeholder="Rechercher une carte…" autocomplete="off"/>
+            <span class="search-ico">⚲</span>
+          </div>
+          <div class="filter-row">
+            <button class="flt active" data-f="all">Toutes</button>
+            <button class="flt" data-f="monster">Monstre</button>
+            <button class="flt spell" data-f="spell">Sort</button>
+            <button class="flt trap" data-f="trap">Piège</button>
+            <button class="flt" data-f="extra">Extra</button>
+          </div>
+        </div>
+        <div id="card-list"></div>
+      </div>
+      <!-- CREATE -->
+      <div class="tab-pane" id="tab-create">
+        <div class="create-form">
+          <div class="ftitle" id="ftitle">✦ Nouvelle Carte</div>
+          <input type="hidden" id="edit-id"/>
+          <div class="img-drop" id="img-drop">
+            <input type="file" id="img-file" accept="image/*"/>
+            <div id="img-ph"><div class="img-drop-ico">🖼</div>
+              <div class="img-drop-txt"><strong>Cliquez ou glissez</strong> une image<br><span style="font-size:.65rem;opacity:.6;">JPG, PNG, GIF, WebP…</span></div></div>
+            <div id="img-pv-wrap" style="display:none;">
+              <div class="img-prev-wrap"><img id="img-pv" class="img-prev" src="" alt=""/>
+                <button class="img-rm" id="img-rm" type="button">✕</button></div></div>
+          </div>
+          <div class="fg"><label>Nom *</label><input id="f-name" type="text" placeholder="ex : Dark Magician" maxlength="60"/></div>
+          <div class="frow2">
+            <div class="fg"><label>Type</label>
+              <select id="f-type">
+                <option value="monster">⚔ Monstre</option>
+                <option value="spell">✦ Sort</option>
+                <option value="trap">⚠ Piège</option>
+                <option value="extra">★ Extra Deck</option>
+              </select>
+            </div>
+            <div class="fg"><label>Sous-type</label><input id="f-sub" type="text" placeholder="Dragon/Fusion"/></div>
+          </div>
+          <div id="mstats">
+            <div class="frow3">
+              <div class="fg"><label>Niveau</label><input id="f-lvl" type="number" placeholder="1-12" min="1" max="12"/></div>
+              <div class="fg"><label>ATK</label><input id="f-atk" type="number" placeholder="0-9999" min="0"/></div>
+              <div class="fg"><label>DEF</label><input id="f-def" type="number" placeholder="0-9999" min="0"/></div>
+            </div>
+          </div>
+          <div class="fg"><label>Description / Effet</label><textarea id="f-desc" placeholder="Décrivez l'effet…"></textarea></div>
+          <button class="btn-submit" id="btn-submit" onclick="submitCard()">✦ Ajouter à la base</button>
+          <button class="btn-cancel" id="btn-cancel" onclick="cancelEdit()">Annuler</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RIGHT ═══ -->
+  <div class="right-side">
+    <!-- DECK TABS -->
+    <div class="deck-tabs-bar" id="deck-tabs-bar">
+      <!-- rendered by JS -->
+      <button class="btn-new-deck" onclick="newDeck()" title="Nouveau deck">＋</button>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="deck-toolbar">
+      <input class="deck-name" id="deck-name" type="text" value="" placeholder="Nom du deck…"
+             onchange="renameDeck(this.value)" oninput="renameDeck(this.value)"/>
+      <div class="tbar">
+        <button class="btn btn-o" onclick="showDecksOverview()">📋 Mes Decks</button>
+        <button class="btn btn-o" onclick="importDeck()">📂 Importer</button>
+        <button class="btn btn-o" onclick="exportDeck()">💾 Exporter</button>
+        <button class="btn btn-d" onclick="clearDeck()">🗑 Vider</button>
+        <button class="btn btn-g" onclick="saveDeck()">✦ Sauvegarder</button>
+      </div>
+    </div>
+
+    <!-- DECK AREA -->
+    <div class="deck-area" id="deck-area"></div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tip" id="tip">
+  <img class="tip-img" id="tip-img" src="" alt=""/>
+  <div class="tip-name" id="tip-name"></div>
+  <div class="tip-type" id="tip-type"></div>
+  <div class="tip-desc" id="tip-desc"></div>
+  <div class="tip-stats" id="tip-stats"></div>
+</div>
+
+<!-- Decks Overview Modal -->
+<div class="moverlay" id="m-decks">
+  <div class="modal" style="max-width:520px;">
+    <h3>📋 Mes Decks</h3>
+    <div id="decks-overview-body" style="max-height:65vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,.3) transparent;padding-right:4px;"></div>
+    <div class="mfoot" style="margin-top:14px;">
+      <button class="btn btn-o" onclick="cm('m-decks')">Fermer</button>
+      <button class="btn btn-g" onclick="newDeck();cm('m-decks')">＋ Nouveau Deck</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div class="moverlay" id="m-export">
+  <div class="modal">
+    <h3>💾 Exporter le Deck</h3>
+    <p>Copiez ce code pour sauvegarder ou partager votre deck :</p>
+    <textarea class="mtx" id="ex-text" readonly></textarea>
+    <div class="mfoot">
+      <button class="btn btn-o" onclick="cm('m-export')">Fermer</button>
+      <button class="btn btn-g" onclick="copyEx()">Copier</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="moverlay" id="m-import">
+  <div class="modal">
+    <h3>📂 Importer un Deck</h3>
+    <p>Collez un code de deck exporté :</p>
+    <textarea class="mtx" id="im-text" placeholder="Collez votre deck ici…"></textarea>
+    <div class="mfoot">
+      <button class="btn btn-o" onclick="cm('m-import')">Annuler</button>
+      <button class="btn btn-g" onclick="doImport()">Importer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  CARD DATABASE
+// ════════════════════════════════════════════════════════
+let DB = [
+  {id:1, name:"Dark Magician",             type:"monster",subtype:"Spellcaster/Normal",level:7, atk:2500,def:2100,desc:"Le représentant ultime des magiciens, supérieur en magie."},
+  {id:2, name:"Blue-Eyes White Dragon",    type:"monster",subtype:"Dragon/Normal",     level:8, atk:3000,def:2500,desc:"Ce dragon légendaire est une puissance de destruction suprême."},
+  {id:3, name:"Exodia the Forbidden One",  type:"monster",subtype:"Spellcaster/Normal",level:3, atk:1000,def:1000,desc:"Réunissez les 5 pièces en main : victoire immédiate !"},
+  {id:4, name:"Summoned Skull",            type:"monster",subtype:"Fiend/Normal",      level:6, atk:2500,def:1200,desc:"Un puissant démon doté d'une force magique considérable."},
+  {id:5, name:"Red-Eyes Black Dragon",     type:"monster",subtype:"Dragon/Normal",     level:7, atk:2400,def:2000,desc:"Un dragon noir aux yeux rouges sang, symbole du potentiel."},
+  {id:6, name:"Kuriboh",                   type:"monster",subtype:"Fiend/Effect",      level:1, atk:300, def:200, desc:"Défaussez-le lors du calcul des dommages pour réduire ceux-ci à 0."},
+  {id:7, name:"Jinzo",                     type:"monster",subtype:"Machine/Effect",    level:6, atk:2400,def:1500,desc:"Les cartes Piège et leurs effets ne peuvent pas être activés."},
+  {id:8, name:"Cyber Dragon",              type:"monster",subtype:"Machine/Effect",    level:5, atk:2100,def:1600,desc:"Invocable Spécialement si l'adversaire contrôle un monstre et pas vous."},
+  {id:9, name:"Sangan",                    type:"monster",subtype:"Fiend/Effect",      level:3, atk:1000,def:600, desc:"Envoyée au Cimetière : ajoutez un monstre (ATK ≤1500) à votre main."},
+  {id:10,name:"Breaker the Magical Warrior",type:"monster",subtype:"Spellcaster/Effect",level:4,atk:1600,def:1000,desc:"Détruisez une Carte Magie/Piège en retirant un Compteur Magie."},
+  {id:11,name:"Magician of Faith",         type:"monster",subtype:"Spellcaster/Effect",level:1,atk:300, def:400, desc:"FLIP : Ajoutez une Carte Magie de votre Cimetière à votre main."},
+  {id:12,name:"Witch of the Black Forest", type:"monster",subtype:"Spellcaster/Effect",level:4,atk:1100,def:1200,desc:"Envoyée au Cimetière : ajoutez un monstre (DEF ≤1500) à votre main."},
+  {id:101,name:"Pot of Greed",             type:"spell",  subtype:"Normal",            desc:"Piochez 2 cartes."},
+  {id:102,name:"Raigeki",                  type:"spell",  subtype:"Normal",            desc:"Détruisez tous les monstres contrôlés par votre adversaire."},
+  {id:103,name:"Dark Hole",                type:"spell",  subtype:"Normal",            desc:"Détruisez tous les monstres sur le Terrain."},
+  {id:104,name:"Monster Reborn",           type:"spell",  subtype:"Normal",            desc:"Invoquez Spécialement 1 monstre depuis n'importe quel Cimetière."},
+  {id:105,name:"Mystical Space Typhoon",   type:"spell",  subtype:"Rapide",            desc:"Ciblez 1 Carte Magie/Piège sur le Terrain ; détruisez-la."},
+  {id:106,name:"Heavy Storm",              type:"spell",  subtype:"Normal",            desc:"Détruisez toutes les Cartes Magie et Piège sur le Terrain."},
+  {id:107,name:"Graceful Charity",         type:"spell",  subtype:"Normal",            desc:"Piochez 3 cartes, puis défaussez 2 cartes."},
+  {id:108,name:"Swords of Revealing Light",type:"spell",  subtype:"Normal",            desc:"L'adversaire ne peut pas attaquer pendant 3 tours."},
+  {id:109,name:"Premature Burial",         type:"spell",  subtype:"Équipement",        desc:"Payez 800 LP. Invoquez Spécialement 1 monstre de votre Cimetière."},
+  {id:201,name:"Mirror Force",             type:"trap",   subtype:"Normal",            desc:"Lors d'une attaque adverse : détruisez tous ses monstres en Position d'Attaque."},
+  {id:202,name:"Trap Hole",                type:"trap",   subtype:"Normal",            desc:"Lorsque votre adversaire Invoque un monstre (ATK ≥1000) : détruisez-le."},
+  {id:203,name:"Magic Cylinder",           type:"trap",   subtype:"Normal",            desc:"Annulez une attaque et infligez des dommages égaux à l'ATK du monstre."},
+  {id:204,name:"Solemn Judgment",          type:"trap",   subtype:"Contre",            desc:"Payez la moitié de vos LP. Annulez une Invocation ou l'activation d'une carte."},
+  {id:205,name:"Call of the Haunted",      type:"trap",   subtype:"Continu",           desc:"Ciblez 1 monstre dans votre Cimetière ; Invoquez-le Spécialement."},
+  {id:206,name:"Torrential Tribute",       type:"trap",   subtype:"Normal",            desc:"Lorsqu'un monstre est Invoqué : détruisez tous les monstres sur le Terrain."},
+  {id:301,name:"Blue-Eyes Ultimate Dragon",type:"extra",  subtype:"Dragon/Fusion",     level:12,atk:4500,def:3800,desc:"3× Blue-Eyes White Dragon. Le dragon fusion légendaire le plus puissant."},
+  {id:302,name:"Dark Paladin",             type:"extra",  subtype:"Spellcaster/Fusion",level:8, atk:2900,def:2400,desc:"Dark Magician + Buster Blader. Gagne 500 ATK pour chaque Dragon au Cimetière."},
+  {id:303,name:"Thousand Dragon",          type:"extra",  subtype:"Dragon/Fusion",     level:7, atk:2400,def:2000,desc:"Time Wizard + Baby Dragon."},
+  {id:304,name:"Meteor Black Dragon",      type:"extra",  subtype:"Dragon/Fusion",     level:8, atk:3500,def:2000,desc:"Meteor Dragon + Red-Eyes Black Dragon. Puissance cosmique."},
+];
+
+let imgs = {};
+let nextId = 10000;
+
+// ════════════════════════════════════════════════════════
+//  MULTI-DECK STATE
+// ════════════════════════════════════════════════════════
+// decks = [ { id, name, main:[], extra:[], updatedAt } ]
+let decks = [];
+let currentDeckId = null;
+
+function currentDeck() { return decks.find(d => d.id === currentDeckId) || null; }
+function getDeckCards() { const d = currentDeck(); return d ? d : { main: [], extra: [] }; }
+
+// ════════════════════════════════════════════════════════
+//  PERSIST
+// ════════════════════════════════════════════════════════
+function loadStorage() {
+  try { const c=localStorage.getItem('ygo-custom'); if(c){const a=JSON.parse(c);DB=[...DB,...a];nextId=Math.max(nextId,...a.map(x=>x.id+1));} } catch(e){}
+  try { const i=localStorage.getItem('ygo-imgs'); if(i) imgs=JSON.parse(i); } catch(e){}
+  try {
+    const ds=localStorage.getItem('ygo-decks-v2');
+    if(ds){ decks=JSON.parse(ds); }
+    const cur=localStorage.getItem('ygo-current-deck');
+    if(cur && decks.find(d=>d.id===cur)) currentDeckId=cur;
+  } catch(e){}
+  // migration from old single deck
+  if(!decks.length){
+    try{
+      const old=localStorage.getItem('ygo-deck');
+      if(old){ const od=JSON.parse(old); decks=[{id:'deck-1',name:'Mon Deck',main:od.main||[],extra:od.extra||[],updatedAt:Date.now()}]; }
+    }catch(e){}
+    if(!decks.length) decks=[{id:'deck-1',name:'Mon Deck',main:[],extra:[],updatedAt:Date.now()}];
+    currentDeckId=decks[0].id;
+  }
+  if(!currentDeckId) currentDeckId=decks[0].id;
+}
+
+function saveStorage() {
+  try{ localStorage.setItem('ygo-decks-v2',JSON.stringify(decks)); } catch(e){}
+  try{ localStorage.setItem('ygo-current-deck',currentDeckId); } catch(e){}
+}
+function persistCards() {
+  try{ localStorage.setItem('ygo-custom',JSON.stringify(DB.filter(c=>c.id>=10000))); } catch(e){}
+  try{ localStorage.setItem('ygo-imgs',JSON.stringify(imgs)); } catch(e){}
+}
+
+// ════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════
+const esc = s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast on'+(type?' '+type:'');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2700);
+}
+function cardImg(c){ return imgs[c.id]||c.image||null; }
+function emoji(c){ return c.type==='monster'?'⚔':c.type==='spell'?'✦':c.type==='trap'?'⚠':'★'; }
+function uid(){ return 'deck-'+Date.now()+'-'+Math.random().toString(36).slice(2,6); }
+
+function inDeck(c){
+  const d=currentDeck(); if(!d) return 0;
+  const s=c.type==='extra'?d.extra:d.main;
+  const e=s.find(x=>x.card.id===c.id); return e?e.count:0;
+}
+function totMain(d){ return (d||currentDeck()||{main:[]}).main.reduce((s,e)=>s+e.count,0); }
+function totExtra(d){ return (d||currentDeck()||{extra:[]}).extra.reduce((s,e)=>s+e.count,0); }
+function deckStats(d){
+  return {
+    mon: d.main.filter(e=>e.card.type==='monster').reduce((s,e)=>s+e.count,0),
+    sp:  d.main.filter(e=>e.card.type==='spell').reduce((s,e)=>s+e.count,0),
+    tr:  d.main.filter(e=>e.card.type==='trap').reduce((s,e)=>s+e.count,0),
+    ex:  totExtra(d),
+    tot: totMain(d),
+  };
+}
+
+function updStats(){
+  const d=currentDeck();
+  if(!d){ document.getElementById('s-main').textContent=0;document.getElementById('s-extra').textContent=0;
+    document.getElementById('s-mon').textContent=0;document.getElementById('s-sp').textContent=0;document.getElementById('s-tr').textContent=0;return;}
+  const st=deckStats(d);
+  document.getElementById('s-main').textContent=st.tot;
+  document.getElementById('s-extra').textContent=st.ex;
+  document.getElementById('s-mon').textContent=st.mon;
+  document.getElementById('s-sp').textContent=st.sp;
+  document.getElementById('s-tr').textContent=st.tr;
+}
+
+// ════════════════════════════════════════════════════════
+//  DECK MANAGEMENT
+// ════════════════════════════════════════════════════════
+function newDeck(){
+  const d={ id:uid(), name:'Deck '+(decks.length+1), main:[], extra:[], updatedAt:Date.now() };
+  decks.push(d);
+  switchDeck(d.id);
+  saveStorage();
+  renderDeckTabs();
+  toast('✦ Nouveau deck créé !','ok');
+}
+
+function switchDeck(id){
+  currentDeckId=id;
+  const d=currentDeck();
+  document.getElementById('deck-name').value=d?d.name:'';
+  renderDeckTabs();
+  renderDeck();
+  updStats();
+  saveStorage();
+}
+
+function renameDeck(name){
+  const d=currentDeck(); if(!d) return;
+  d.name=name||'Deck sans nom';
+  d.updatedAt=Date.now();
+  renderDeckTabs();
+  saveStorage();
+}
+
+function duplicateDeck(id){
+  const src=decks.find(d=>d.id===id); if(!src) return;
+  const copy={ id:uid(), name:src.name+' (copie)', main:JSON.parse(JSON.stringify(src.main)), extra:JSON.parse(JSON.stringify(src.extra)), updatedAt:Date.now() };
+  decks.push(copy);
+  switchDeck(copy.id);
+  saveStorage();
+  renderDecksOverview();
+  toast('📋 Deck dupliqué !','ok');
+}
+
+function deleteDeck(id){
+  if(decks.length<=1){ toast('Impossible de supprimer le dernier deck !','err'); return; }
+  const d=decks.find(x=>x.id===id);
+  if(!confirm('Supprimer le deck "'+d.name+'" ?')) return;
+  decks=decks.filter(x=>x.id!==id);
+  if(currentDeckId===id) switchDeck(decks[decks.length-1].id);
+  saveStorage();
+  renderDeckTabs();
+  renderDecksOverview();
+  toast('Deck supprimé');
+}
+
+// ════════════════════════════════════════════════════════
+//  ADD / REMOVE CARDS
+// ════════════════════════════════════════════════════════
+function addCard(c){
+  const d=currentDeck(); if(!d){ toast('Aucun deck actif !','err'); return; }
+  const n=inDeck(c);
+  if(n>=3){ toast('Maximum 3 exemplaires par carte !','err'); return; }
+  if(c.type==='extra'){
+    if(totExtra()>=15){ toast('Deck Extra plein (15 max) !','err'); return; }
+    const e=d.extra.find(x=>x.card.id===c.id); if(e) e.count++; else d.extra.push({card:c,count:1});
+  } else {
+    if(totMain()>=60){ toast('Deck principal plein (60 max) !','err'); return; }
+    const e=d.main.find(x=>x.card.id===c.id); if(e) e.count++; else d.main.push({card:c,count:1});
+  }
+  d.updatedAt=Date.now();
+  renderDeck(); updStats(); renderDeckTabs();
+  toast('✦ '+c.name+' ajoutée','ok');
+}
+
+function rmCard(id,isEx){
+  const d=currentDeck(); if(!d) return;
+  const s=isEx?'extra':'main';
+  const i=d[s].findIndex(e=>e.card.id===id); if(i===-1) return;
+  if(d[s][i].count>1) d[s][i].count--; else d[s].splice(i,1);
+  d.updatedAt=Date.now();
+  renderDeck(); updStats(); renderDeckTabs();
+}
+
+// ════════════════════════════════════════════════════════
+//  RENDER DECK TABS
+// ════════════════════════════════════════════════════════
+function renderDeckTabs(){
+  const bar=document.getElementById('deck-tabs-bar');
+  const newBtn=bar.querySelector('.btn-new-deck');
+  // remove all tabs
+  bar.querySelectorAll('.dtab').forEach(t=>t.remove());
+  decks.forEach(d=>{
+    const tab=document.createElement('div');
+    tab.className='dtab'+(d.id===currentDeckId?' active':'');
+    const tot=totMain(d);
+    tab.innerHTML=`<span onclick="switchDeck('${d.id}')" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+      ${esc(d.name)}<span class="dtab-count">${tot}</span></span>
+      <button class="dtab-close" onclick="deleteDeck('${d.id}')" title="Supprimer">✕</button>`;
+    bar.insertBefore(tab,newBtn);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  RENDER CARD LIST
+// ════════════════════════════════════════════════════════
+let srch='',filt='all';
+function thumb(c){
+  const img=cardImg(c);
+  if(img) return`<div class="cthumb"><img src="${img}" alt=""/></div>`;
+  return`<div class="cthumb ni ${c.type}">${emoji(c)}</div>`;
+}
+function renderList(){
+  const el=document.getElementById('card-list');
+  const q=srch.toLowerCase();
+  const list=DB.filter(c=>{
+    if(filt!=='all'&&c.type!==filt) return false;
+    if(q&&!c.name.toLowerCase().includes(q)&&!(c.subtype||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if(!list.length){ el.innerHTML='<div class="no-res">Aucune carte trouvée.</div>'; return; }
+  el.innerHTML=list.map(c=>`
+    <div class="citem ${c.type}" onmouseenter="showTip(event,${c.id})" onmouseleave="hideTip()" onmousemove="moveTip(event)">
+      ${thumb(c)}
+      <div class="cinfo">
+        <div class="cname">${esc(c.name)}</div>
+        <div class="ctype">${esc(c.subtype||c.type)}</div>
+        ${c.atk!==undefined?`<div class="catk">ATK ${c.atk} / DEF ${c.def}</div>`:''}
+      </div>
+      <div class="cactions">
+        <button class="cbtn edit" onclick="editCard(${c.id})" title="Modifier">✎</button>
+        ${c.id>=10000?`<button class="cbtn del" onclick="delFromDB(${c.id})" title="Supprimer">🗑</button>`:''}
+        <button class="cbtn add" onclick="addCard(DB.find(x=>x.id===${c.id}))" title="Ajouter">+</button>
+      </div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════
+//  RENDER DECK AREA
+// ════════════════════════════════════════════════════════
+function renderDeck(){
+  const d=currentDeck();
+  const area=document.getElementById('deck-area');
+  if(!d||(!d.main.length&&!d.extra.length)){
+    area.innerHTML='<div class="empty"><div class="ico">⚔</div><p>Ce deck est vide.<br>Ajoutez des cartes depuis le panneau gauche.</p></div>';
+    return;
+  }
+  function sec(entries,title,cls,isEx=false){
+    if(!entries.length) return'';
+    const tot=entries.reduce((s,e)=>s+e.count,0);
+    const cards=entries.flatMap(e=>Array(e.count).fill(e.card));
+    return`<div class="dsec"><div class="dhead">
+      <span class="dtitle ${cls}">${title}</span><span class="dcount">${tot}</span><div class="dline"></div></div>
+      <div class="dgrid">${cards.map(c=>{
+        const img=cardImg(c);
+        const iw=img?`<div class="dcard-img"><img src="${img}" alt=""/></div>`
+          :`<div class="dcard-img ni">${emoji(c)}<span style="font-size:.5rem;opacity:.7;margin-top:2px">${esc(c.name.split(' ').slice(0,2).join(' '))}</span></div>`;
+        return`<div class="dcard ${c.type}" onmouseenter="showTip(event,${c.id})" onmouseleave="hideTip()" onmousemove="moveTip(event)">
+          ${iw}<div class="dcard-n">${inDeck(c)}</div>
+          <button class="dcard-rm" onclick="rmCard(${c.id},${isEx})">−</button></div>`;
+      }).join('')}</div></div>`;
+  }
+  area.innerHTML=
+    sec(d.main.filter(e=>e.card.type==='monster'),'Monstres','monster')+
+    sec(d.main.filter(e=>e.card.type==='spell'),'Sorts','spell')+
+    sec(d.main.filter(e=>e.card.type==='trap'),'Pièges','trap')+
+    sec(d.extra,'Extra Deck','extra',true);
+}
+
+// ════════════════════════════════════════════════════════
+//  DECKS OVERVIEW MODAL
+// ════════════════════════════════════════════════════════
+function showDecksOverview(){
+  renderDecksOverview();
+  document.getElementById('m-decks').classList.add('on');
+}
+function renderDecksOverview(){
+  const body=document.getElementById('decks-overview-body');
+  if(!decks.length){ body.innerHTML='<p style="color:var(--text-dim);text-align:center;padding:20px;">Aucun deck.</p>'; return; }
+  const sorted=[...decks].sort((a,b)=>b.updatedAt-a.updatedAt);
+  body.innerHTML=sorted.map(d=>{
+    const st=deckStats(d);
+    const isC=d.id===currentDeckId;
+    const date=new Date(d.updatedAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    return`<div class="deck-card-item${isC?' current':''}" onclick="switchDeck('${d.id}');cm('m-decks')">
+      <div class="dci-header">
+        <span class="dci-name">${esc(d.name)}</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${isC?'<span class="dci-current-badge">● Actif</span>':''}
+          <div class="dci-actions" onclick="event.stopPropagation()">
+            <button class="dci-btn open" onclick="switchDeck('${d.id}');cm('m-decks')" title="Ouvrir">▶</button>
+            <button class="dci-btn dup" onclick="duplicateDeck('${d.id}')" title="Dupliquer">⧉</button>
+            <button class="dci-btn del" onclick="deleteDeck('${d.id}')" title="Supprimer">🗑</button>
+          </div>
+        </div>
+      </div>
+      <div class="dci-stats">
+        <span class="dci-chip total">🃏 ${st.tot} cartes</span>
+        <span class="dci-chip m">⚔ ${st.mon}</span>
+        <span class="dci-chip s">✦ ${st.sp}</span>
+        <span class="dci-chip t">⚠ ${st.tr}</span>
+        ${st.ex?`<span class="dci-chip e">★ Extra ${st.ex}</span>`:''}
+      </div>
+      <div class="dci-date">Modifié le ${date}</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+//  TOOLTIP
+// ════════════════════════════════════════════════════════
+function showTip(e,id){
+  const c=DB.find(x=>x.id===id); if(!c) return;
+  const img=cardImg(c);
+  const pi=document.getElementById('tip-img');
+  if(img){pi.src=img;pi.classList.add('on');}else{pi.src='';pi.classList.remove('on');}
+  document.getElementById('tip-name').textContent=c.name;
+  document.getElementById('tip-type').textContent=c.type.toUpperCase()+(c.subtype?' · '+c.subtype:'')+(c.level?' · '+'★'.repeat(Math.min(c.level,12)):'');
+  document.getElementById('tip-desc').textContent=c.desc||'';
+  document.getElementById('tip-stats').innerHTML=c.atk!==undefined
+    ?`<span class="tatk">ATK ${c.atk}</span><span class="tdef">DEF ${c.def}</span>${c.level?`<span class="tlvl">Niv.${c.level}</span>`:''}`:'';
+  document.getElementById('tip').classList.add('on'); moveTip(e);
+}
+function moveTip(e){
+  const p=document.getElementById('tip');
+  let x=e.clientX+13,y=e.clientY-9;
+  if(x+202>window.innerWidth) x=e.clientX-208;
+  if(y+235>window.innerHeight) y=e.clientY-235;
+  p.style.left=x+'px';p.style.top=y+'px';
+}
+function hideTip(){ document.getElementById('tip').classList.remove('on'); }
+
+// ════════════════════════════════════════════════════════
+//  IMAGE UPLOAD
+// ════════════════════════════════════════════════════════
+let editId=null,pendImg=null;
+function setImg(url){ pendImg=url;document.getElementById('img-ph').style.display='none';document.getElementById('img-pv-wrap').style.display='block';document.getElementById('img-pv').src=url; }
+function clrImg(){ pendImg=null;document.getElementById('img-ph').style.display='block';document.getElementById('img-pv-wrap').style.display='none';document.getElementById('img-pv').src='';document.getElementById('img-file').value=''; }
+document.getElementById('img-file').addEventListener('change',function(){
+  const f=this.files[0];if(!f)return;
+  const r=new FileReader();r.onload=e=>setImg(e.target.result);r.readAsDataURL(f);
+});
+document.getElementById('img-rm').addEventListener('click',e=>{e.stopPropagation();clrImg();});
+const drop=document.getElementById('img-drop');
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{
+  e.preventDefault();drop.classList.remove('over');
+  const f=e.dataTransfer.files[0];if(!f||!f.type.startsWith('image/'))return;
+  const r=new FileReader();r.onload=ev=>setImg(ev.target.result);r.readAsDataURL(f);
+});
+document.getElementById('f-type').addEventListener('change',function(){
+  document.getElementById('mstats').style.display=(this.value==='monster'||this.value==='extra')?'block':'none';
+});
+
+// ════════════════════════════════════════════════════════
+//  CREATE / EDIT / DELETE CARD
+// ════════════════════════════════════════════════════════
+function submitCard(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){ toast('Le nom est obligatoire !','err'); return; }
+  const type=document.getElementById('f-type').value;
+  const sub=document.getElementById('f-sub').value.trim();
+  const desc=document.getElementById('f-desc').value.trim();
+  const lvl=document.getElementById('f-lvl').value!==''?parseInt(document.getElementById('f-lvl').value):undefined;
+  const atk=document.getElementById('f-atk').value!==''?parseInt(document.getElementById('f-atk').value):undefined;
+  const def=document.getElementById('f-def').value!==''?parseInt(document.getElementById('f-def').value):undefined;
+  if(editId!==null){
+    const i=DB.findIndex(c=>c.id===editId);
+    if(i!==-1){ DB[i]={...DB[i],name,type,subtype:sub,desc,...(lvl!==undefined?{level:lvl}:{}),...(atk!==undefined?{atk,def}:{})}; }
+    if(pendImg&&pendImg!==cardImg(DB[i])) imgs[editId]=pendImg;
+    toast('✦ "'+name+'" modifiée !','ok');
+    cancelEdit();
+  } else {
+    const id=nextId++;
+    DB.push({id,name,type,subtype:sub,desc,...(lvl!==undefined?{level:lvl}:{}),...(atk!==undefined?{atk,def}:{})});
+    if(pendImg) imgs[id]=pendImg;
+    toast('✦ "'+name+'" créée !','ok');
+    resetForm();
+  }
+  persistCards(); renderList(); renderDeck();
+}
+function editCard(id){
+  const c=DB.find(x=>x.id===id); if(!c) return;
+  editId=id; pendImg=null;
+  document.getElementById('f-name').value=c.name;
+  document.getElementById('f-type').value=c.type;
+  document.getElementById('f-sub').value=c.subtype||'';
+  document.getElementById('f-desc').value=c.desc||'';
+  document.getElementById('f-lvl').value=c.level||'';
+  document.getElementById('f-atk').value=c.atk!==undefined?c.atk:'';
+  document.getElementById('f-def').value=c.def!==undefined?c.def:'';
+  document.getElementById('mstats').style.display=(c.type==='monster'||c.type==='extra')?'block':'none';
+  const img=cardImg(c); if(img){setImg(img);pendImg=img;}else clrImg();
+  document.getElementById('ftitle').textContent='✎ Modifier la Carte';
+  document.getElementById('btn-submit').textContent='✔ Enregistrer';
+  document.getElementById('btn-submit').classList.add('editing');
+  document.getElementById('btn-cancel').style.display='block';
+  switchTab('create');
+}
+function cancelEdit(){
+  editId=null;pendImg=null;resetForm();
+  document.getElementById('ftitle').textContent='✦ Nouvelle Carte';
+  document.getElementById('btn-submit').textContent='✦ Ajouter à la base';
+  document.getElementById('btn-submit').classList.remove('editing');
+  document.getElementById('btn-cancel').style.display='none';
+}
+function resetForm(){
+  ['f-name','f-sub','f-desc','f-lvl','f-atk','f-def'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-type').value='monster';
+  document.getElementById('mstats').style.display='block';
+  clrImg();
+}
+function delFromDB(id){
+  const c=DB.find(x=>x.id===id); if(!c) return;
+  if(!confirm('Supprimer "'+c.name+'" de la base de cartes ?')) return;
+  DB=DB.filter(x=>x.id!==id); delete imgs[id];
+  decks.forEach(d=>{ d.main=d.main.filter(e=>e.card.id!==id); d.extra=d.extra.filter(e=>e.card.id!==id); });
+  persistCards(); renderList(); renderDeck(); updStats();
+  toast('"'+c.name+'" supprimée');
+}
+
+// ════════════════════════════════════════════════════════
+//  DECK TOOLBAR ACTIONS
+// ════════════════════════════════════════════════════════
+function clearDeck(){
+  const d=currentDeck(); if(!d||(!d.main.length&&!d.extra.length)) return;
+  if(confirm('Vider le deck "'+d.name+'" ?')){
+    d.main=[];d.extra=[];d.updatedAt=Date.now();
+    renderDeck();updStats();renderDeckTabs();
+    toast('Deck vidé');
+  }
+}
+function saveDeck(){
+  const d=currentDeck(); if(!d) return;
+  d.updatedAt=Date.now();
+  saveStorage();
+  toast('✦ "'+d.name+'" sauvegardé !','ok');
+}
+function exportDeck(){
+  const d=currentDeck(); if(!d) return;
+  document.getElementById('ex-text').value=JSON.stringify({name:d.name,deck:{main:d.main,extra:d.extra}},null,2);
+  document.getElementById('m-export').classList.add('on');
+}
+function copyEx(){
+  const t=document.getElementById('ex-text');t.select();document.execCommand('copy');
+  toast('Copié dans le presse-papiers !');
+}
+function importDeck(){ document.getElementById('im-text').value=''; document.getElementById('m-import').classList.add('on'); }
+function doImport(){
+  try{
+    const data=JSON.parse(document.getElementById('im-text').value.trim());
+    if(data.deck){
+      const nd={ id:uid(), name:data.name||'Deck importé', main:data.deck.main||[], extra:data.deck.extra||[], updatedAt:Date.now() };
+      decks.push(nd);
+      switchDeck(nd.id);
+      saveStorage();
+      cm('m-import');
+      toast('Deck importé !','ok');
+    } else throw 0;
+  }catch{ toast('Format invalide !','err'); }
+}
+function cm(id){ document.getElementById(id).classList.remove('on'); }
+document.querySelectorAll('.moverlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('on'); }));
+
+// ════════════════════════════════════════════════════════
+//  TABS (left panel)
+// ════════════════════════════════════════════════════════
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+}
+document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+
+// ════════════════════════════════════════════════════════
+//  SEARCH & FILTER
+// ════════════════════════════════════════════════════════
+document.getElementById('search-input').addEventListener('input',e=>{srch=e.target.value;renderList();});
+document.querySelectorAll('.flt').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.flt').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');filt=b.dataset.f;renderList();
+  });
+});
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+loadStorage();
+document.getElementById('deck-name').value = currentDeck()?.name || '';
+renderDeckTabs();
+renderList();
+renderDeck();
+updStats();
+</script>
+</body>
+</html>
