@@ -172,6 +172,10 @@ header p{color:var(--text-dim);font-size:.78rem;margin-top:3px;letter-spacing:3p
 .btn-o:hover{background:rgba(255,255,255,.05);color:var(--text);}
 .btn-d{background:transparent;color:var(--accent2);border:1px solid rgba(232,59,106,.28);}
 .btn-d:hover{background:rgba(232,59,106,.09);}
+.btn-backup{background:transparent;color:#5adc8a;border:1px solid rgba(90,220,138,.3);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;padding:5px 12px;border-radius:5px;transition:all .2s;}
+.btn-backup:hover{background:rgba(90,220,138,.1);}
+.btn-restore{background:transparent;color:#5a9adc;border:1px solid rgba(90,154,220,.3);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;padding:5px 12px;border-radius:5px;transition:all .2s;}
+.btn-restore:hover{background:rgba(90,154,220,.1);}
 
 /* DECK AREA */
 .deck-area{flex:1;overflow-y:auto;padding:14px 16px;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,.3) transparent;}
@@ -377,6 +381,9 @@ header p{color:var(--text-dim);font-size:.78rem;margin-top:3px;letter-spacing:3p
         <button class="btn btn-o" onclick="showDecksOverview()">📋 Mes Decks</button>
         <button class="btn btn-o" onclick="importDeck()">📂 Importer</button>
         <button class="btn btn-o" onclick="exportDeck()">💾 Exporter</button>
+        <button class="btn btn-backup" onclick="backupAll()" title="Sauvegarder TOUS les decks dans un fichier">⬇ Backup</button>
+        <button class="btn btn-restore" onclick="document.getElementById('restore-file').click()" title="Restaurer depuis un fichier backup">⬆ Restaurer</button>
+        <input type="file" id="restore-file" accept=".json" style="display:none" onchange="restoreAll(this)"/>
         <button class="btn btn-d" onclick="clearDeck()">🗑 Vider</button>
         <button class="btn btn-g" onclick="saveDeck()">✦ Sauvegarder</button>
       </div>
@@ -883,6 +890,52 @@ function delFromDB(id){
 // ════════════════════════════════════════════════════════
 //  DECK TOOLBAR ACTIONS
 // ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+//  BACKUP / RESTORE (fichier JSON)
+// ════════════════════════════════════════════════════════
+function backupAll(){
+  const data = {
+    version: 2,
+    decks: decks,
+    customCards: DB.filter(c=>c.id>=10000),
+    images: imgs,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ygo-backup-'+new Date().toLocaleDateString('fr-FR').replace(/\//g,'-')+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✦ Backup téléchargé !','ok');
+}
+
+function restoreAll(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.decks) throw 0;
+      if(!confirm('Restaurer la sauvegarde ? Cela remplacera vos decks actuels.')) return;
+      decks = data.decks;
+      if(data.customCards) DB=[...DB.filter(c=>c.id<10000),...data.customCards];
+      if(data.images) imgs = data.images;
+      currentDeckId = decks[0]?.id || null;
+      saveStorage(); persistCards();
+      renderDeckTabs();
+      renderList();
+      renderDeck();
+      updStats();
+      document.getElementById('deck-name').value = currentDeck()?.name||'';
+      toast('✦ Sauvegarde restaurée !','ok');
+    }catch{ toast('Fichier invalide !','err'); }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
 function clearDeck(){
   const d=currentDeck(); if(!d||(!d.main.length&&!d.extra.length)) return;
   if(confirm('Vider le deck "'+d.name+'" ?')){
