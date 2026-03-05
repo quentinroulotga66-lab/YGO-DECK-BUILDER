@@ -766,7 +766,16 @@ async function fetchCards(query, filter, offset=0) {
     const local = cards.map(apiCardToLocal);
     // Merge custom cards
     try{ const cc=localStorage.getItem('ygo-custom');if(cc){JSON.parse(cc).forEach(c=>{if(!local.find(x=>x.id===c.id))local.push(c);});}}catch(e){}
-    DB = offset === 0 ? local : [...DB, ...local];
+    // Toujours garder les cartes Anime (Dartz etc.) en les filtrant selon la recherche
+    const animeFiltered = DARTZ_CARDS.filter(c=>{
+      if(!local.find(x=>x.id===c.id)){
+        if(filt!=='all' && c.type!==filt) return false;
+        if(srch && srch.length>=1 && !c.name.toLowerCase().includes(srch.toLowerCase())) return false;
+        return true;
+      }
+      return false;
+    });
+    DB = offset === 0 ? [...local, ...animeFiltered] : [...DB, ...local];
     status.textContent = DB.length > 0 ? `✦ ${apiTotal} carte(s) trouvée(s)` : '✦ Aucune carte trouvée';
     const showMore = filter !== 'extra' && (offset + PAGE_SIZE) < apiTotal;
     document.getElementById('load-more-wrap').style.display = showMore ? 'block' : 'none';
