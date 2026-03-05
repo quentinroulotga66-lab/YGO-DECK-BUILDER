@@ -448,37 +448,55 @@ header p{color:var(--text-dim);font-size:.78rem;margin-top:3px;letter-spacing:3p
 //  CARD DATABASE
 // ════════════════════════════════════════════════════════
 let DB = [
-  {id:1, name:"Dark Magician",             type:"monster",subtype:"Spellcaster/Normal",level:7, atk:2500,def:2100,desc:"Le représentant ultime des magiciens, supérieur en magie."},
-  {id:2, name:"Blue-Eyes White Dragon",    type:"monster",subtype:"Dragon/Normal",     level:8, atk:3000,def:2500,desc:"Ce dragon légendaire est une puissance de destruction suprême."},
-  {id:3, name:"Exodia the Forbidden One",  type:"monster",subtype:"Spellcaster/Normal",level:3, atk:1000,def:1000,desc:"Réunissez les 5 pièces en main : victoire immédiate !"},
-  {id:4, name:"Summoned Skull",            type:"monster",subtype:"Fiend/Normal",      level:6, atk:2500,def:1200,desc:"Un puissant démon doté d'une force magique considérable."},
-  {id:5, name:"Red-Eyes Black Dragon",     type:"monster",subtype:"Dragon/Normal",     level:7, atk:2400,def:2000,desc:"Un dragon noir aux yeux rouges sang, symbole du potentiel."},
-  {id:6, name:"Kuriboh",                   type:"monster",subtype:"Fiend/Effect",      level:1, atk:300, def:200, desc:"Défaussez-le lors du calcul des dommages pour réduire ceux-ci à 0."},
-  {id:7, name:"Jinzo",                     type:"monster",subtype:"Machine/Effect",    level:6, atk:2400,def:1500,desc:"Les cartes Piège et leurs effets ne peuvent pas être activés."},
-  {id:8, name:"Cyber Dragon",              type:"monster",subtype:"Machine/Effect",    level:5, atk:2100,def:1600,desc:"Invocable Spécialement si l'adversaire contrôle un monstre et pas vous."},
-  {id:9, name:"Sangan",                    type:"monster",subtype:"Fiend/Effect",      level:3, atk:1000,def:600, desc:"Envoyée au Cimetière : ajoutez un monstre (ATK ≤1500) à votre main."},
-  {id:10,name:"Breaker the Magical Warrior",type:"monster",subtype:"Spellcaster/Effect",level:4,atk:1600,def:1000,desc:"Détruisez une Carte Magie/Piège en retirant un Compteur Magie."},
-  {id:11,name:"Magician of Faith",         type:"monster",subtype:"Spellcaster/Effect",level:1,atk:300, def:400, desc:"FLIP : Ajoutez une Carte Magie de votre Cimetière à votre main."},
-  {id:12,name:"Witch of the Black Forest", type:"monster",subtype:"Spellcaster/Effect",level:4,atk:1100,def:1200,desc:"Envoyée au Cimetière : ajoutez un monstre (DEF ≤1500) à votre main."},
-  {id:101,name:"Pot of Greed",             type:"spell",  subtype:"Normal",            desc:"Piochez 2 cartes."},
-  {id:102,name:"Raigeki",                  type:"spell",  subtype:"Normal",            desc:"Détruisez tous les monstres contrôlés par votre adversaire."},
-  {id:103,name:"Dark Hole",                type:"spell",  subtype:"Normal",            desc:"Détruisez tous les monstres sur le Terrain."},
-  {id:104,name:"Monster Reborn",           type:"spell",  subtype:"Normal",            desc:"Invoquez Spécialement 1 monstre depuis n'importe quel Cimetière."},
-  {id:105,name:"Mystical Space Typhoon",   type:"spell",  subtype:"Rapide",            desc:"Ciblez 1 Carte Magie/Piège sur le Terrain ; détruisez-la."},
-  {id:106,name:"Heavy Storm",              type:"spell",  subtype:"Normal",            desc:"Détruisez toutes les Cartes Magie et Piège sur le Terrain."},
-  {id:107,name:"Graceful Charity",         type:"spell",  subtype:"Normal",            desc:"Piochez 3 cartes, puis défaussez 2 cartes."},
-  {id:108,name:"Swords of Revealing Light",type:"spell",  subtype:"Normal",            desc:"L'adversaire ne peut pas attaquer pendant 3 tours."},
-  {id:109,name:"Premature Burial",         type:"spell",  subtype:"Équipement",        desc:"Payez 800 LP. Invoquez Spécialement 1 monstre de votre Cimetière."},
-  {id:201,name:"Mirror Force",             type:"trap",   subtype:"Normal",            desc:"Lors d'une attaque adverse : détruisez tous ses monstres en Position d'Attaque."},
-  {id:202,name:"Trap Hole",                type:"trap",   subtype:"Normal",            desc:"Lorsque votre adversaire Invoque un monstre (ATK ≥1000) : détruisez-le."},
-  {id:203,name:"Magic Cylinder",           type:"trap",   subtype:"Normal",            desc:"Annulez une attaque et infligez des dommages égaux à l'ATK du monstre."},
-  {id:204,name:"Solemn Judgment",          type:"trap",   subtype:"Contre",            desc:"Payez la moitié de vos LP. Annulez une Invocation ou l'activation d'une carte."},
-  {id:205,name:"Call of the Haunted",      type:"trap",   subtype:"Continu",           desc:"Ciblez 1 monstre dans votre Cimetière ; Invoquez-le Spécialement."},
-  {id:206,name:"Torrential Tribute",       type:"trap",   subtype:"Normal",            desc:"Lorsqu'un monstre est Invoqué : détruisez tous les monstres sur le Terrain."},
-  {id:301,name:"Blue-Eyes Ultimate Dragon",type:"extra",  subtype:"Dragon/Fusion",     level:12,atk:4500,def:3800,desc:"3× Blue-Eyes White Dragon. Le dragon fusion légendaire le plus puissant."},
-  {id:302,name:"Dark Paladin",             type:"extra",  subtype:"Spellcaster/Fusion",level:8, atk:2900,def:2400,desc:"Dark Magician + Buster Blader. Gagne 500 ATK pour chaque Dragon au Cimetière."},
-  {id:303,name:"Thousand Dragon",          type:"extra",  subtype:"Dragon/Fusion",     level:7, atk:2400,def:2000,desc:"Time Wizard + Baby Dragon."},
-  {id:304,name:"Meteor Black Dragon",      type:"extra",  subtype:"Dragon/Fusion",     level:8, atk:3500,def:2000,desc:"Meteor Dragon + Red-Eyes Black Dragon. Puissance cosmique."},
+  // ── MONSTRES ──
+  {id:1, name:"Magicien Sombre",                  type:"monster",subtype:"Magicien/Normal",      level:7, atk:2500,def:2100,desc:"Le représentant ultime des magiciens, supérieur en magie et en combat."},
+  {id:2, name:"Dragon Blanc aux Yeux Bleus",      type:"monster",subtype:"Dragon/Normal",        level:8, atk:3000,def:2500,desc:"Ce dragon légendaire est une puissance de destruction absolue. Sa force titanesque est inégalable."},
+  {id:3, name:"Exodia l'Interdit",                type:"monster",subtype:"Magicien/Normal",      level:3, atk:1000,def:1000,desc:"Réunissez les 5 pièces d'Exodia en main pour remporter la victoire instantanément !"},
+  {id:4, name:"Crâne Invoqué",                    type:"monster",subtype:"Démon/Normal",         level:6, atk:2500,def:1200,desc:"Un puissant démon doté d'une force magique considérable. Sa terreur ne connaît pas de limites."},
+  {id:5, name:"Dragon Noir aux Yeux Rouges",      type:"monster",subtype:"Dragon/Normal",        level:7, atk:2400,def:2000,desc:"Un dragon noir aux yeux rouges sang, symbole du potentiel caché et de la puissance brute."},
+  {id:6, name:"Kuriboh",                          type:"monster",subtype:"Démon/Effet",          level:1, atk:300, def:200, desc:"Défaussez cette carte lors du calcul des dommages pour réduire les dommages de combat à 0."},
+  {id:7, name:"Jinzo",                            type:"monster",subtype:"Machine/Effet",        level:6, atk:2400,def:1500,desc:"Les Cartes Piège et leurs effets ne peuvent pas être activés. Les Cartes Piège déjà posées sont annulées."},
+  {id:8, name:"Cyber Dragon",                     type:"monster",subtype:"Machine/Effet",        level:5, atk:2100,def:1600,desc:"Si votre adversaire contrôle un monstre et que vous n'en contrôlez pas, vous pouvez Invoquer Spécialement cette carte depuis votre main."},
+  {id:9, name:"Sanguin",                          type:"monster",subtype:"Démon/Effet",          level:3, atk:1000,def:600, desc:"Lorsque cette carte est envoyée au Cimetière : ajoutez 1 monstre avec 1500 ATK ou moins depuis votre Deck à votre main."},
+  {id:10,name:"Briseur le Guerrier Magique",      type:"monster",subtype:"Magicien/Effet",       level:4, atk:1600,def:1000,desc:"Lorsque cette carte est Invoquée Normalement, placez 1 Compteur Magie dessus. Retirez 1 Compteur Magie pour détruire 1 Carte Magie/Piège sur le Terrain."},
+  {id:11,name:"Magicienne de la Foi",             type:"monster",subtype:"Magicien/Effet",       level:1, atk:300, def:400, desc:"FLIP : Ajoutez 1 Carte Magie depuis votre Cimetière à votre main."},
+  {id:12,name:"Sorcière de la Forêt Noire",       type:"monster",subtype:"Magicien/Effet",       level:4, atk:1100,def:1200,desc:"Lorsque cette carte est envoyée au Cimetière : ajoutez 1 monstre avec 1500 DEF ou moins depuis votre Deck à votre main."},
+  {id:13,name:"Homme-Insecte Mangeur d'Hommes",   type:"monster",subtype:"Insecte/Effet",        level:2, atk:450, def:600, desc:"FLIP : Détruisez 1 monstre sur le Terrain (au choix du joueur qui active cet effet)."},
+  {id:14,name:"Génie Mystérieux La Djinn",        type:"monster",subtype:"Démon/Normal",         level:4, atk:1800,def:1000,desc:"Un génie maléfique d'une puissance redoutable qui surgit de sa lampe pour semer la terreur."},
+  {id:15,name:"Guerrier Pumpking le Roi des Fantômes",type:"monster",subtype:"Zombi/Effet",      level:6, atk:1800,def:1500,desc:"Augmente l'ATK de tous les monstres Zombi de 100 points à chaque Standby Phase."},
+  {id:16,name:"Harpie Dame",                      type:"monster",subtype:"Guerrière-Ailée/Effet",level:4, atk:1300,def:1400,desc:"Toutes les cartes 'Harpie Dame' sont traitées comme 'Harpie Dame'. Lorsque cette carte est Invoquée Normalement, détruisez 1 Carte Magie/Piège."},
+  {id:17,name:"Loup du Néant",                    type:"monster",subtype:"Bête/Effet",           level:4, atk:1600,def:1200,desc:"Cette carte peut attaquer directement. Si elle inflige des dommages de combat, elle revient dans la main."},
+  {id:18,name:"Soldat de Pierre Ancienne",        type:"monster",subtype:"Roche/Normal",         level:3, atk:1300,def:2000,desc:"Un soldat de pierre façonné dans les temps anciens, gardien inébranlable des ruines oubliées."},
+  {id:19,name:"Chevalier Gaia le Guerrier Féroce",type:"monster",subtype:"Guerrier/Normal",      level:7, atk:2300,def:2100,desc:"Un chevalier légendaire dont la bravoure et la puissance font trembler tous ses ennemis."},
+  {id:20,name:"Dragon Cornu de Feu",              type:"monster",subtype:"Dragon/Normal",        level:5, atk:2000,def:1500,desc:"Un dragon aux cornes enflammées qui crache un feu dévastateur sur ses adversaires."},
+  // ── SORTS ──
+  {id:101,name:"Jarre de l'Avidité",              type:"spell",  subtype:"Normal",               desc:"Piochez 2 cartes."},
+  {id:102,name:"Raigeki",                         type:"spell",  subtype:"Normal",               desc:"Détruisez tous les monstres contrôlés par votre adversaire."},
+  {id:103,name:"Trou Noir",                       type:"spell",  subtype:"Normal",               desc:"Détruisez tous les monstres sur le Terrain."},
+  {id:104,name:"Résurrection des Morts",          type:"spell",  subtype:"Normal",               desc:"Ciblez 1 monstre dans l'un ou l'autre Cimetière ; Invoquez-le Spécialement."},
+  {id:105,name:"Typhon de l'Espace Mystique",     type:"spell",  subtype:"Rapide",               desc:"Ciblez 1 Carte Magie/Piège sur le Terrain ; détruisez-la."},
+  {id:106,name:"Tempête Dévastatrice",            type:"spell",  subtype:"Normal",               desc:"Détruisez toutes les Cartes Magie et Piège sur le Terrain."},
+  {id:107,name:"Charité Gracieuse",               type:"spell",  subtype:"Normal",               desc:"Piochez 3 cartes, puis défaussez 2 cartes."},
+  {id:108,name:"Épées de la Lumière Révélatrice", type:"spell",  subtype:"Normal",               desc:"Retournez tous les monstres adverses face recto. L'adversaire ne peut pas attaquer pendant 3 tours."},
+  {id:109,name:"Enterrement Prématuré",           type:"spell",  subtype:"Équipement",           desc:"Payez 800 LP. Invoquez Spécialement 1 monstre depuis votre Cimetière en Position d'Attaque et équipez-le de cette carte. Si cette carte est détruite, détruisez le monstre."},
+  {id:110,name:"Hache du Désespoir",              type:"spell",  subtype:"Équipement",           desc:"Le monstre équipé gagne 1000 ATK."},
+  {id:111,name:"Renforcement de l'Armée",         type:"spell",  subtype:"Normal",               desc:"Ajoutez 1 monstre Guerrier de Niveau 4 ou inférieur depuis votre Deck à votre main."},
+  {id:112,name:"Polymérisassion",                 type:"spell",  subtype:"Normal",               desc:"Défaussez les Matériels de Fusion indiqués depuis votre main et/ou Terrain et Invoquez Spécialement le Monstre Fusion depuis votre Extra Deck."},
+  // ── PIÈGES ──
+  {id:201,name:"Force du Miroir",                 type:"trap",   subtype:"Normal",               desc:"Lorsqu'un monstre adverse déclare une attaque : détruisez tous les monstres adverses en Position d'Attaque."},
+  {id:202,name:"Trappe",                          type:"trap",   subtype:"Normal",               desc:"Lorsque votre adversaire Invoque Normalement ou par Flip un monstre avec 1000 ATK ou plus : détruisez ce monstre."},
+  {id:203,name:"Cylindre Magique",                type:"trap",   subtype:"Normal",               desc:"Lorsqu'un monstre adverse déclare une attaque : annulez l'attaque et infligez des dommages à votre adversaire égaux à l'ATK de ce monstre."},
+  {id:204,name:"Jugement Solennel",               type:"trap",   subtype:"Contre",               desc:"Payez la moitié de vos LP. Annulez l'activation d'une carte ou l'Invocation d'un monstre, et détruisez-le/la."},
+  {id:205,name:"Appel de l'Être Hanté",           type:"trap",   subtype:"Continu",              desc:"Activez cette carte en ciblant 1 monstre dans votre Cimetière ; Invoquez Spécialement la cible. Lorsque cette carte quitte le Terrain, détruisez ce monstre."},
+  {id:206,name:"Tribut Torrentiel",               type:"trap",   subtype:"Normal",               desc:"Lorsqu'un monstre est Invoqué : détruisez tous les monstres sur le Terrain."},
+  {id:207,name:"Feu des Damnés",                  type:"trap",   subtype:"Normal",               desc:"Détruisez 1 monstre en Position d'Attaque contrôlé par votre adversaire avec une ATK inférieure ou égale à votre nombre de Cartes Piège dans votre Cimetière × 500."},
+  {id:208,name:"Sept Outils du Bandit",           type:"trap",   subtype:"Contre",               desc:"Payez 1000 LP ; annulez l'activation d'une Carte Piège adverse et détruisez-la."},
+  // ── EXTRA DECK ──
+  {id:301,name:"Dragon Ultime aux Yeux Bleus",    type:"extra",  subtype:"Dragon/Fusion",        level:12,atk:4500,def:3800,desc:"Dragon Blanc aux Yeux Bleus × 3. Le dragon de Fusion le plus puissant de la légende, capable de tout anéantir."},
+  {id:302,name:"Paladin des Ténèbres",            type:"extra",  subtype:"Magicien/Fusion",      level:8, atk:2900,def:2400,desc:"Magicien Sombre + Briseur de Lames. Gagne 500 ATK pour chaque Dragon dans les Cimetières."},
+  {id:303,name:"Dragon Millénaire",               type:"extra",  subtype:"Dragon/Fusion",        level:7, atk:2400,def:2000,desc:"Magicien du Temps + Petit Dragon. Un voyage à travers le temps a transformé ce dragon en une puissance redoutable."},
+  {id:304,name:"Dragon Noir Météore",             type:"extra",  subtype:"Dragon/Fusion",        level:8, atk:3500,def:2000,desc:"Dragon Météore + Dragon Noir aux Yeux Rouges. Une force cosmique dévastatrice issue de la fusion de deux dragons légendaires."},
+  {id:305,name:"Dragon Ultime aux Cinq Têtes",    type:"extra",  subtype:"Dragon/Fusion",        level:10,atk:3500,def:3000,desc:"5 monstres Dragons. Ce dragon à cinq têtes peut changer de Type et d'Attribut à volonté et détruire des cartes en masse."},
 ];
 
 let imgs = {};
@@ -1008,26 +1026,3 @@ updStats();
 </script>
 </body>
 </html>
-
-
-
-
-
- 
-
-
- 
-
-
- 
-
- 
-
-
-
-
- 
-    
-
-
-
