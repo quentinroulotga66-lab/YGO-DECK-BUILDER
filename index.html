@@ -312,7 +312,7 @@ header p{color:var(--text-dim);font-size:.78rem;margin-top:3px;letter-spacing:3p
       <div class="tab-pane active" id="tab-browse">
         <div class="browse-controls">
           <div class="search-wrap">
-            <input id="search-input" type="text" placeholder="Rechercher une carte…" autocomplete="off"/>
+            <input id="search-input" type="text" placeholder="Rechercher parmi 10 000+ cartes…" autocomplete="off"/>
             <span class="search-ico">⚲</span>
           </div>
           <div class="filter-row">
@@ -322,8 +322,14 @@ header p{color:var(--text-dim);font-size:.78rem;margin-top:3px;letter-spacing:3p
             <button class="flt trap" data-f="trap">Piège</button>
             <button class="flt" data-f="extra">Extra</button>
           </div>
+          <div id="api-status" style="font-size:.68rem;color:var(--text-dim);padding:5px 2px;display:none;"></div>
         </div>
         <div id="card-list"></div>
+        <div id="load-more-wrap" style="display:none;padding:8px;text-align:center;">
+          <button id="load-more-btn" onclick="loadMoreCards()" style="width:100%;padding:7px;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);border-radius:6px;color:var(--gold);font-family:'Rajdhani',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;letter-spacing:1px;">
+            ▼ Charger plus de cartes
+          </button>
+        </div>
       </div>
       <!-- CREATE -->
       <div class="tab-pane" id="tab-create">
@@ -447,57 +453,277 @@ header p{color:var(--text-dim);font-size:.78rem;margin-top:3px;letter-spacing:3p
 // ════════════════════════════════════════════════════════
 //  CARD DATABASE
 // ════════════════════════════════════════════════════════
-let DB = [
-  // ── MONSTRES ──
-  {id:1, name:"Magicien Sombre",                  type:"monster",subtype:"Magicien/Normal",      level:7, atk:2500,def:2100,desc:"Le représentant ultime des magiciens, supérieur en magie et en combat."},
-  {id:2, name:"Dragon Blanc aux Yeux Bleus",      type:"monster",subtype:"Dragon/Normal",        level:8, atk:3000,def:2500,desc:"Ce dragon légendaire est une puissance de destruction absolue. Sa force titanesque est inégalable."},
-  {id:3, name:"Exodia l'Interdit",                type:"monster",subtype:"Magicien/Normal",      level:3, atk:1000,def:1000,desc:"Réunissez les 5 pièces d'Exodia en main pour remporter la victoire instantanément !"},
-  {id:4, name:"Crâne Invoqué",                    type:"monster",subtype:"Démon/Normal",         level:6, atk:2500,def:1200,desc:"Un puissant démon doté d'une force magique considérable. Sa terreur ne connaît pas de limites."},
-  {id:5, name:"Dragon Noir aux Yeux Rouges",      type:"monster",subtype:"Dragon/Normal",        level:7, atk:2400,def:2000,desc:"Un dragon noir aux yeux rouges sang, symbole du potentiel caché et de la puissance brute."},
-  {id:6, name:"Kuriboh",                          type:"monster",subtype:"Démon/Effet",          level:1, atk:300, def:200, desc:"Défaussez cette carte lors du calcul des dommages pour réduire les dommages de combat à 0."},
-  {id:7, name:"Jinzo",                            type:"monster",subtype:"Machine/Effet",        level:6, atk:2400,def:1500,desc:"Les Cartes Piège et leurs effets ne peuvent pas être activés. Les Cartes Piège déjà posées sont annulées."},
-  {id:8, name:"Cyber Dragon",                     type:"monster",subtype:"Machine/Effet",        level:5, atk:2100,def:1600,desc:"Si votre adversaire contrôle un monstre et que vous n'en contrôlez pas, vous pouvez Invoquer Spécialement cette carte depuis votre main."},
-  {id:9, name:"Sanguin",                          type:"monster",subtype:"Démon/Effet",          level:3, atk:1000,def:600, desc:"Lorsque cette carte est envoyée au Cimetière : ajoutez 1 monstre avec 1500 ATK ou moins depuis votre Deck à votre main."},
-  {id:10,name:"Briseur le Guerrier Magique",      type:"monster",subtype:"Magicien/Effet",       level:4, atk:1600,def:1000,desc:"Lorsque cette carte est Invoquée Normalement, placez 1 Compteur Magie dessus. Retirez 1 Compteur Magie pour détruire 1 Carte Magie/Piège sur le Terrain."},
-  {id:11,name:"Magicienne de la Foi",             type:"monster",subtype:"Magicien/Effet",       level:1, atk:300, def:400, desc:"FLIP : Ajoutez 1 Carte Magie depuis votre Cimetière à votre main."},
-  {id:12,name:"Sorcière de la Forêt Noire",       type:"monster",subtype:"Magicien/Effet",       level:4, atk:1100,def:1200,desc:"Lorsque cette carte est envoyée au Cimetière : ajoutez 1 monstre avec 1500 DEF ou moins depuis votre Deck à votre main."},
-  {id:13,name:"Homme-Insecte Mangeur d'Hommes",   type:"monster",subtype:"Insecte/Effet",        level:2, atk:450, def:600, desc:"FLIP : Détruisez 1 monstre sur le Terrain (au choix du joueur qui active cet effet)."},
-  {id:14,name:"Génie Mystérieux La Djinn",        type:"monster",subtype:"Démon/Normal",         level:4, atk:1800,def:1000,desc:"Un génie maléfique d'une puissance redoutable qui surgit de sa lampe pour semer la terreur."},
-  {id:15,name:"Guerrier Pumpking le Roi des Fantômes",type:"monster",subtype:"Zombi/Effet",      level:6, atk:1800,def:1500,desc:"Augmente l'ATK de tous les monstres Zombi de 100 points à chaque Standby Phase."},
-  {id:16,name:"Harpie Dame",                      type:"monster",subtype:"Guerrière-Ailée/Effet",level:4, atk:1300,def:1400,desc:"Toutes les cartes 'Harpie Dame' sont traitées comme 'Harpie Dame'. Lorsque cette carte est Invoquée Normalement, détruisez 1 Carte Magie/Piège."},
-  {id:17,name:"Loup du Néant",                    type:"monster",subtype:"Bête/Effet",           level:4, atk:1600,def:1200,desc:"Cette carte peut attaquer directement. Si elle inflige des dommages de combat, elle revient dans la main."},
-  {id:18,name:"Soldat de Pierre Ancienne",        type:"monster",subtype:"Roche/Normal",         level:3, atk:1300,def:2000,desc:"Un soldat de pierre façonné dans les temps anciens, gardien inébranlable des ruines oubliées."},
-  {id:19,name:"Chevalier Gaia le Guerrier Féroce",type:"monster",subtype:"Guerrier/Normal",      level:7, atk:2300,def:2100,desc:"Un chevalier légendaire dont la bravoure et la puissance font trembler tous ses ennemis."},
-  {id:20,name:"Dragon Cornu de Feu",              type:"monster",subtype:"Dragon/Normal",        level:5, atk:2000,def:1500,desc:"Un dragon aux cornes enflammées qui crache un feu dévastateur sur ses adversaires."},
-  // ── SORTS ──
-  {id:101,name:"Jarre de l'Avidité",              type:"spell",  subtype:"Normal",               desc:"Piochez 2 cartes."},
-  {id:102,name:"Raigeki",                         type:"spell",  subtype:"Normal",               desc:"Détruisez tous les monstres contrôlés par votre adversaire."},
-  {id:103,name:"Trou Noir",                       type:"spell",  subtype:"Normal",               desc:"Détruisez tous les monstres sur le Terrain."},
-  {id:104,name:"Résurrection des Morts",          type:"spell",  subtype:"Normal",               desc:"Ciblez 1 monstre dans l'un ou l'autre Cimetière ; Invoquez-le Spécialement."},
-  {id:105,name:"Typhon de l'Espace Mystique",     type:"spell",  subtype:"Rapide",               desc:"Ciblez 1 Carte Magie/Piège sur le Terrain ; détruisez-la."},
-  {id:106,name:"Tempête Dévastatrice",            type:"spell",  subtype:"Normal",               desc:"Détruisez toutes les Cartes Magie et Piège sur le Terrain."},
-  {id:107,name:"Charité Gracieuse",               type:"spell",  subtype:"Normal",               desc:"Piochez 3 cartes, puis défaussez 2 cartes."},
-  {id:108,name:"Épées de la Lumière Révélatrice", type:"spell",  subtype:"Normal",               desc:"Retournez tous les monstres adverses face recto. L'adversaire ne peut pas attaquer pendant 3 tours."},
-  {id:109,name:"Enterrement Prématuré",           type:"spell",  subtype:"Équipement",           desc:"Payez 800 LP. Invoquez Spécialement 1 monstre depuis votre Cimetière en Position d'Attaque et équipez-le de cette carte. Si cette carte est détruite, détruisez le monstre."},
-  {id:110,name:"Hache du Désespoir",              type:"spell",  subtype:"Équipement",           desc:"Le monstre équipé gagne 1000 ATK."},
-  {id:111,name:"Renforcement de l'Armée",         type:"spell",  subtype:"Normal",               desc:"Ajoutez 1 monstre Guerrier de Niveau 4 ou inférieur depuis votre Deck à votre main."},
-  {id:112,name:"Polymérisassion",                 type:"spell",  subtype:"Normal",               desc:"Défaussez les Matériels de Fusion indiqués depuis votre main et/ou Terrain et Invoquez Spécialement le Monstre Fusion depuis votre Extra Deck."},
-  // ── PIÈGES ──
-  {id:201,name:"Force du Miroir",                 type:"trap",   subtype:"Normal",               desc:"Lorsqu'un monstre adverse déclare une attaque : détruisez tous les monstres adverses en Position d'Attaque."},
-  {id:202,name:"Trappe",                          type:"trap",   subtype:"Normal",               desc:"Lorsque votre adversaire Invoque Normalement ou par Flip un monstre avec 1000 ATK ou plus : détruisez ce monstre."},
-  {id:203,name:"Cylindre Magique",                type:"trap",   subtype:"Normal",               desc:"Lorsqu'un monstre adverse déclare une attaque : annulez l'attaque et infligez des dommages à votre adversaire égaux à l'ATK de ce monstre."},
-  {id:204,name:"Jugement Solennel",               type:"trap",   subtype:"Contre",               desc:"Payez la moitié de vos LP. Annulez l'activation d'une carte ou l'Invocation d'un monstre, et détruisez-le/la."},
-  {id:205,name:"Appel de l'Être Hanté",           type:"trap",   subtype:"Continu",              desc:"Activez cette carte en ciblant 1 monstre dans votre Cimetière ; Invoquez Spécialement la cible. Lorsque cette carte quitte le Terrain, détruisez ce monstre."},
-  {id:206,name:"Tribut Torrentiel",               type:"trap",   subtype:"Normal",               desc:"Lorsqu'un monstre est Invoqué : détruisez tous les monstres sur le Terrain."},
-  {id:207,name:"Feu des Damnés",                  type:"trap",   subtype:"Normal",               desc:"Détruisez 1 monstre en Position d'Attaque contrôlé par votre adversaire avec une ATK inférieure ou égale à votre nombre de Cartes Piège dans votre Cimetière × 500."},
-  {id:208,name:"Sept Outils du Bandit",           type:"trap",   subtype:"Contre",               desc:"Payez 1000 LP ; annulez l'activation d'une Carte Piège adverse et détruisez-la."},
-  // ── EXTRA DECK ──
-  {id:301,name:"Dragon Ultime aux Yeux Bleus",    type:"extra",  subtype:"Dragon/Fusion",        level:12,atk:4500,def:3800,desc:"Dragon Blanc aux Yeux Bleus × 3. Le dragon de Fusion le plus puissant de la légende, capable de tout anéantir."},
-  {id:302,name:"Paladin des Ténèbres",            type:"extra",  subtype:"Magicien/Fusion",      level:8, atk:2900,def:2400,desc:"Magicien Sombre + Briseur de Lames. Gagne 500 ATK pour chaque Dragon dans les Cimetières."},
-  {id:303,name:"Dragon Millénaire",               type:"extra",  subtype:"Dragon/Fusion",        level:7, atk:2400,def:2000,desc:"Magicien du Temps + Petit Dragon. Un voyage à travers le temps a transformé ce dragon en une puissance redoutable."},
-  {id:304,name:"Dragon Noir Météore",             type:"extra",  subtype:"Dragon/Fusion",        level:8, atk:3500,def:2000,desc:"Dragon Météore + Dragon Noir aux Yeux Rouges. Une force cosmique dévastatrice issue de la fusion de deux dragons légendaires."},
-  {id:305,name:"Dragon Ultime aux Cinq Têtes",    type:"extra",  subtype:"Dragon/Fusion",        level:10,atk:3500,def:3000,desc:"5 monstres Dragons. Ce dragon à cinq têtes peut changer de Type et d'Attribut à volonté et détruire des cartes en masse."},
-];
+// ════════════════════════════════════════════════════════
+//  API YGOPRODECK — 10 000+ cartes avec images
+// ════════════════════════════════════════════════════════
+const API_BASE = 'https://db.ygoprodeck.com/api/v7/cardinfo.php';
+let DB = [];
+let apiTotal = 0;
+let apiOffset = 0;
+const PAGE_SIZE = 30;
+let isLoading = false;
+let searchTimer = null;
+
+// ── Noms français des cartes classiques ──
+const NAMES_FR = {
+  // Monstres iconiques
+  "Dark Magician":"Magicien Sombre",
+  "Blue-Eyes White Dragon":"Dragon Blanc aux Yeux Bleus",
+  "Exodia the Forbidden One":"Exodia l'Interdit",
+  "Right Leg of the Forbidden One":"Jambe Droite de l'Interdit",
+  "Left Leg of the Forbidden One":"Jambe Gauche de l'Interdit",
+  "Right Arm of the Forbidden One":"Bras Droit de l'Interdit",
+  "Left Arm of the Forbidden One":"Bras Gauche de l'Interdit",
+  "Summoned Skull":"Crâne Invoqué",
+  "Red-Eyes Black Dragon":"Dragon Noir aux Yeux Rouges",
+  "Kuriboh":"Kuriboh",
+  "Jinzo":"Jinzo",
+  "Cyber Dragon":"Cyber Dragon",
+  "Sangan":"Sanguin",
+  "Witch of the Black Forest":"Sorcière de la Forêt Noire",
+  "Magician of Faith":"Magicienne de la Foi",
+  "Breaker the Magical Warrior":"Briseur le Guerrier Magique",
+  "Dark Magician Girl":"Magicienne Sombre",
+  "Buster Blader":"Briseur de Lames",
+  "Baby Dragon":"Bébé Dragon",
+  "Time Wizard":"Magicien du Temps",
+  "Gaia The Fierce Knight":"Gaia le Chevalier Féroce",
+  "Celtic Guardian":"Gardien Celte",
+  "Mystical Elf":"Elfe Mystique",
+  "Winged Dragon, Guardian of the Fortress #1":"Dragon Ailé, Gardien de la Forteresse",
+  "Giant Soldier of Stone":"Géant Soldat de Pierre",
+  "Harpie Lady":"Harpie Dame",
+  "Man-Eater Bug":"Insecte Mangeur d'Hommes",
+  "Trap Master":"Maître des Pièges",
+  "Relinquished":"Relinquished",
+  "Black Luster Soldier":"Soldat du Lustre Noir",
+  "Perfectly Ultimate Great Moth":"Grande Phalène Parfaitement Ultime",
+  "Meteor Dragon":"Dragon Météore",
+  "Thousand Dragon":"Dragon Millénaire",
+  "Flame Swordsman":"Épéiste des Flammes",
+  "Polymerization":"Polymérisation",
+  "Skull Servant":"Serviteur du Crâne",
+  "Wall of Illusion":"Mur de l'Illusion",
+  "Aqua Madoor":"Sorcier Aquatique",
+  "Red-Eyes B. Chick":"Poussin aux Yeux Rouges",
+  "La Jinn the Mystical Genie of the Lamp":"La Djinn le Génie Mystique de la Lampe",
+  "Mystic Horseman":"Cavalier Mystique",
+  "Saggi the Dark Clown":"Saggi le Clown des Ténèbres",
+  "Ryu-Kishin Powered":"Ryu-Kishin Propulsé",
+  "Hitotsu-Me Giant":"Géant à Un Œil",
+  "Ryu-Ran":"Ryu-Ran",
+  "Barox":"Barox",
+  "Dragon Zombie":"Zombie Dragon",
+  "Zombyra the Dark":"Zombyra les Ténèbres",
+  "The Illusory Gentleman":"Le Gentilhomme Illusoire",
+  "Lord of D.":"Seigneur des D.",
+  "Flute of Summoning Dragon":"Flûte d'Invocation du Dragon",
+  "Kaiser Dragon":"Dragon Kaiser",
+  "Labyrinth Wall":"Mur du Labyrinthe",
+  "Swordstalker":"Chasseur à l'Épée",
+  "Dark King of the Abyss":"Roi des Ténèbres de l'Abîsse",
+  "The Wicked Worm Beast":"L'Horrible Vermisseau",
+  "Kojikocy":"Kojikocy",
+  "Pumpking the King of Ghosts":"Pumpking le Roi des Fantômes",
+  "Harpie Lady Sisters":"Sœurs Harpie Dame",
+  // Sorts classiques
+  "Pot of Greed":"Jarre de l'Avidité",
+  "Raigeki":"Raigeki",
+  "Dark Hole":"Trou Noir",
+  "Monster Reborn":"Résurrection des Morts",
+  "Mystical Space Typhoon":"Typhon de l'Espace Mystique",
+  "Heavy Storm":"Tempête Dévastatrice",
+  "Graceful Charity":"Charité Gracieuse",
+  "Swords of Revealing Light":"Épées de la Lumière Révélatrice",
+  "Premature Burial":"Enterrement Prématuré",
+  "Change of Heart":"Changement de Cœur",
+  "Axe of Despair":"Hache du Désespoir",
+  "Black Pendant":"Pendentif Noir",
+  "Reinforcement of the Army":"Renforcement de l'Armée",
+  "Snatch Steal":"Vol Dérobé",
+  "Delinquent Duo":"Duo Délinquant",
+  "Confiscation":"Confiscation",
+  "The Forceful Sentry":"La Sentinelle Forcée",
+  "Harpie's Feather Duster":"Plumeau de la Harpie",
+  "United We Stand":"Unis Nous Défendons",
+  "Mage Power":"Pouvoir du Mage",
+  "Fairy Meteor Crush":"Météore de la Fée",
+  "Brain Control":"Contrôle Cérébral",
+  "Book of Moon":"Livre de la Lune",
+  "Enemy Controller":"Contrôleur Ennemi",
+  "Nobleman of Crossout":"Noble de la Croix",
+  "Nobleman of Extermination":"Noble de l'Extermination",
+  "Giant Trunade":"Trunade Géant",
+  "Pot of Avarice":"Jarre de l'Avarice",
+  "Card Destruction":"Destruction de Cartes",
+  "Tribute to The Doomed":"Tribut au Condamné",
+  "Sword of Deep-Seated":"Épée des Tréfonds",
+  "Ookazi":"Ookazi",
+  "Sparks":"Étincelles",
+  "Final Flame":"Flamme Finale",
+  "Tremendous Fire":"Feu Prodigieux",
+  "Stop Defense":"Arrêt de Défense",
+  "Shield & Sword":"Bouclier et Épée",
+  "Multiply":"Multiplication",
+  "De-Spell":"Désenvoûtement",
+  "Polymerization":"Polymérisation",
+  "Fusion Sage":"Sage de la Fusion",
+  "Dragon's Mirror":"Miroir du Dragon",
+  // Pièges classiques
+  "Mirror Force":"Force du Miroir",
+  "Trap Hole":"Trappe",
+  "Magic Cylinder":"Cylindre Magique",
+  "Solemn Judgment":"Jugement Solennel",
+  "Call of the Haunted":"Appel de l'Être Hanté",
+  "Torrential Tribute":"Tribut Torrentiel",
+  "Seven Tools of the Bandit":"Sept Outils du Bandit",
+  "Waboku":"Waboku",
+  "Negate Attack":"Annulation d'Attaque",
+  "Ultimate Offering":"Offrande Ultime",
+  "Robbin' Goblin":"Gobelin Dérobeur",
+  "Robbin' Zombie":"Zombie Dérobeur",
+  "Ceasefire":"Cessez-le-Feu",
+  "Threatening Roar":"Rugissement Menaçant",
+  "Trap Jammer":"Brouilleur de Piège",
+  "Magic Jammer":"Brouilleur de Magie",
+  "Dust Tornado":"Tourbillon de Poussière",
+  "Ring of Destruction":"Anneau de Destruction",
+  "Barrel Behind the Door":"Tonneau Derrière la Porte",
+  "Bad Reaction to Simochi":"Mauvaise Réaction à Simochi",
+  "Graverobber":"Voleur de Tombes",
+  "Acid Trap Hole":"Trappe Acide",
+  "Widespread Ruin":"Ruines Généralisées",
+  "Kunai with Chain":"Kunai à Chaîne",
+  "Castle Walls":"Murailles du Château",
+  "Reinforcements":"Renforts",
+  "Spellbinding Circle":"Cercle d'Envoûtement",
+  // Extra Deck classiques
+  "Blue-Eyes Ultimate Dragon":"Dragon Ultime aux Yeux Bleus",
+  "Dark Paladin":"Paladin des Ténèbres",
+  "Thousand Dragon":"Dragon Millénaire",
+  "Meteor Black Dragon":"Dragon Noir Météore",
+  "B. Skull Dragon":"Dragon du Crâne Noir",
+  "Twin-Headed Thunder Dragon":"Dragon du Tonnerre à Deux Têtes",
+  "Master of Oz":"Maître d'Oz",
+  "Flame Swordsman":"Épéiste des Flammes",
+  "Reaper of the Cards":"Faucheur des Cartes",
+  "Musician King":"Roi Musicien",
+  "Crimson Sunbird":"Oiseau Solaire Cramoisi",
+  "Karbonala Warrior":"Guerrier Karbonala",
+  "Mystical Sand":"Sable Mystique",
+  "Fusionist":"Fusionniste",
+  "Sanwitch":"Sangorcière",
+};
+
+// Dictionnaire de traduction FR pour les types
+const TYPE_FR = {
+  'Normal Monster':'Normal','Effect Monster':'Effet','Fusion Monster':'Fusion',
+  'Ritual Monster':'Rituel','Synchro Monster':'Synchro','XYZ Monster':'Xyz',
+  'Link Monster':'Lien','Flip Effect Monster':'Flip/Effet','Gemini Monster':'Géminé',
+  'Spirit Monster':'Esprit','Toon Monster':'Toon','Union Effect Monster':'Union',
+  'Pendulum Effect Monster':'Pendule/Effet','Pendulum Normal Monster':'Pendule/Normal',
+  'Spell Card':'Magie','Trap Card':'Piège',
+  'Normal Spell Card':'Magie Normal','Quick-Play Spell Card':'Magie Jeu Rapide',
+  'Continuous Spell Card':'Magie Continue','Equip Spell Card':'Magie Équipement',
+  'Field Spell Card':'Magie Terrain','Ritual Spell Card':'Magie Rituel',
+  'Normal Trap Card':'Piège Normal','Continuous Trap Card':'Piège Continu',
+  'Counter Trap Card':'Piège Contre',
+};
+
+function apiTypeToLocal(t) {
+  if (!t) return 'monster';
+  t = t.toLowerCase();
+  if (t.includes('spell')) return 'spell';
+  if (t.includes('trap'))  return 'trap';
+  if (t.includes('fusion')||t.includes('synchro')||t.includes('xyz')||t.includes('link')||t.includes('ritual monster')) return 'extra';
+  return 'monster';
+}
+
+function apiCardToLocal(c) {
+  const type = apiTypeToLocal(c.type);
+  // Utilise le nom français si disponible (champ misc_info[0].konami_id ou card_sets FR)
+  const name = NAMES_FR[c.name] || c.name;
+  const subtypeFr = TYPE_FR[c.type] || c.type || '';
+  const obj = {
+    id:      c.id,
+    name:    name,
+    nameEn:  c.name, // garde le nom anglais pour la recherche
+    type:    type,
+    subtype: subtypeFr,
+    desc:    c.desc || '',
+    image:   c.card_images?.[0]?.image_url_small || null,
+  };
+  if (c.atk !== undefined && c.atk !== null) obj.atk = c.atk;
+  if (c.def !== undefined && c.def !== null) obj.def = c.def;
+  if (c.level)   obj.level = c.level;
+  if (c.rank)    obj.level = c.rank;
+  if (c.linkval) obj.level = c.linkval;
+  return obj;
+}
+
+async function fetchCards(query, filter, offset=0) {
+  if (isLoading) return;
+  isLoading = true;
+  const status = document.getElementById('api-status');
+  const list   = document.getElementById('card-list');
+  status.style.display = 'block';
+  if (offset === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:28px;color:var(--gold);font-size:.85rem;letter-spacing:2px;">⏳ Chargement des cartes…</div>';
+    DB = []; apiTotal = 0; apiOffset = 0;
+  }
+  status.textContent = '⏳ Recherche…';
+  try {
+    let cards = [];
+
+    // Pour la recherche : cherche aussi en anglais car l'API est en anglais
+    // Si query existe, on utilise fname (recherche par nom)
+    const buildUrl = (extraParams='') => {
+      let u = `${API_BASE}?num=${PAGE_SIZE}&offset=${offset}&sort=name&misc=yes`;
+      if (query && query.length >= 2) u += '&fname='+encodeURIComponent(query);
+      if (filter === 'spell') u += '&type=Spell+Card';
+      else if (filter === 'trap') u += '&type=Trap+Card';
+      if (extraParams) u += extraParams;
+      return u;
+    };
+
+    if (filter === 'extra') {
+      const types = ['Fusion Monster','Synchro Monster','XYZ Monster','Link Monster','Ritual Monster'];
+      const results = await Promise.all(types.map(t => {
+        let u = `${API_BASE}?num=20&offset=0&sort=name&misc=yes&type=${encodeURIComponent(t)}`;
+        if (query && query.length >= 2) u += '&fname='+encodeURIComponent(query);
+        return fetch(u).then(r=>r.ok?r.json():null).catch(()=>null);
+      }));
+      results.forEach(r => { if(r&&r.data) cards = cards.concat(r.data); });
+      cards.sort((a,b)=>a.name.localeCompare(b.name));
+      apiTotal = cards.length;
+    } else {
+      const resp = await fetch(buildUrl());
+      if (!resp.ok) throw new Error('API error '+resp.status);
+      const json = await resp.json();
+      cards = json.data || [];
+      apiTotal = json.meta?.total_rows || cards.length;
+      if (filter === 'monster') cards = cards.filter(c=>apiTypeToLocal(c.type)==='monster');
+    }
+
+    const local = cards.map(apiCardToLocal);
+    // Merge custom cards
+    try{ const cc=localStorage.getItem('ygo-custom');if(cc){JSON.parse(cc).forEach(c=>{if(!local.find(x=>x.id===c.id))local.push(c);});}}catch(e){}
+    DB = offset === 0 ? local : [...DB, ...local];
+    status.textContent = DB.length > 0 ? `✦ ${apiTotal} carte(s) trouvée(s)` : '✦ Aucune carte trouvée';
+    const showMore = filter !== 'extra' && (offset + PAGE_SIZE) < apiTotal;
+    document.getElementById('load-more-wrap').style.display = showMore ? 'block' : 'none';
+    renderList();
+  } catch(err) {
+    status.textContent = '⚠ Erreur — vérifiez Internet';
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--accent2);font-size:.85rem;">Impossible de charger les cartes.<br>Vérifiez votre connexion.</div>';
+  }
+  isLoading = false;
+}
+
+function loadMoreCards() {
+  apiOffset += PAGE_SIZE;
+  fetchCards(srch, filt, apiOffset);
+}
 
 let imgs = {};
 let nextId = 10000;
@@ -1004,13 +1230,18 @@ function switchTab(name){
 document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 
 // ════════════════════════════════════════════════════════
-//  SEARCH & FILTER
+//  SEARCH & FILTER — via API
 // ════════════════════════════════════════════════════════
-document.getElementById('search-input').addEventListener('input',e=>{srch=e.target.value;renderList();});
-document.querySelectorAll('.flt').forEach(b=>{
-  b.addEventListener('click',()=>{
+document.getElementById('search-input').addEventListener('input', e => {
+  srch = e.target.value;
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { apiOffset=0; fetchCards(srch, filt, 0); }, 400);
+});
+document.querySelectorAll('.flt').forEach(b => {
+  b.addEventListener('click', () => {
     document.querySelectorAll('.flt').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');filt=b.dataset.f;renderList();
+    b.classList.add('active'); filt = b.dataset.f;
+    apiOffset = 0; fetchCards(srch, filt, 0);
   });
 });
 
@@ -1020,9 +1251,10 @@ document.querySelectorAll('.flt').forEach(b=>{
 loadStorage();
 document.getElementById('deck-name').value = currentDeck()?.name || '';
 renderDeckTabs();
-renderList();
 renderDeck();
 updStats();
+// Chargement initial des cartes depuis l'API
+fetchCards('', 'all', 0);
 </script>
 </body>
 </html>
