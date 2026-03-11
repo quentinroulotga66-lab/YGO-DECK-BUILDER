@@ -1030,17 +1030,32 @@ function exportData() {
 function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
+  // Reset input so same file can be re-imported
+  e.target.value = "";
+
   const reader = new FileReader();
   reader.onload = ev => {
     try {
-      const data = JSON.parse(ev.target.result);
-      if (data.cards) cards = data.cards;
-      if (data.decks) decks = data.decks;
+      // Decode as UTF-8 from ArrayBuffer to avoid truncation on large base64 files
+      const bytes = new Uint8Array(ev.target.result);
+      const text = new TextDecoder("utf-8").decode(bytes);
+      const data = JSON.parse(text);
+      if (!data || typeof data !== "object") throw new Error("invalid");
+      if (Array.isArray(data.cards)) cards = data.cards;
+      if (Array.isArray(data.decks)) decks = data.decks;
+      // Restore active deck if it still exists
+      if (activeDeckId && !decks.find(d => d.id === activeDeckId)) activeDeckId = null;
+      if (!activeDeckId && decks.length) activeDeckId = decks[0].id;
       save(); updateBadges(); renderLibrary(); renderDeckList(); renderDeckContent();
       notify(`✓ Import réussi — ${cards.length} cartes, ${decks.length} decks`);
-    } catch { notify("⚠ Fichier invalide", "#c84b00", "#fff"); }
+    } catch(err) {
+      console.error("Import error:", err);
+      notify("⚠ Fichier invalide ou corrompu", "#c84b00", "#fff");
+    }
   };
-  reader.readAsText(file);
+  reader.onerror = () => notify("⚠ Erreur de lecture du fichier", "#c84b00", "#fff");
+  // Read as ArrayBuffer for reliable handling of large files with base64 images
+  reader.readAsArrayBuffer(file);
 }
 
 function clearAll() {
