@@ -1,636 +1,1100 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Duelliste — Constructeur de Decks Yu-Gi-Oh!</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --gold: #c8a84b; --gold-dark: #8b6914; --gold-light: #e8cc80;
+    --bg: #080806; --bg2: #0e0d0a; --bg3: #161410;
+    --border: #2a2010; --border2: #3a3020;
+    --text: #e8dcc8; --text-dim: #8a7a60; --text-faint: #3a3020;
+    --red: #c84b00; --red-dark: #8b2800;
+    --normal: #c8a84b; --effect: #c84b00; --fusion: #6b3fa0;
+    --synchro: #b0b0b0; --xyz: #333; --link: #003cb3;
+    --magic: #1a8c55; --trap: #8c1a55;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'EB Garamond', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  /* Subtle grain overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.4;
+  }
 
-// ── Card type colors ──────────────────────────────────────────────────────────
-const TYPE_COLORS = {
-  "Monstre Normal":  { bg: "#c8a84b", border: "#8b6914", text: "#1a0a00" },
-  "Monstre Effet":   { bg: "#c84b00", border: "#8b2800", text: "#fff5e6" },
-  "Monstre Fusion":  { bg: "#6b3fa0", border: "#3d1f6e", text: "#f0e6ff" },
-  "Monstre Synchro": { bg: "#d4d4d4", border: "#888", text: "#111" },
-  "Monstre Xyz":     { bg: "#1a1a1a", border: "#555", text: "#fff" },
-  "Monstre Lien":    { bg: "#003cb3", border: "#001f6e", text: "#e6f0ff" },
-  "Magie":           { bg: "#1a8c55", border: "#0a4d2e", text: "#e6fff4" },
-  "Piège":           { bg: "#8c1a55", border: "#4d0a2e", text: "#ffe6f0" },
-};
+  /* ── HEADER ─────────────────────────────────────────────────────── */
+  #header {
+    text-align: center;
+    padding: 28px 0 14px;
+    border-bottom: 1px solid var(--border);
+    position: relative; z-index: 1;
+    background: linear-gradient(180deg, #100e08 0%, transparent 100%);
+  }
+  #header h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(22px, 4vw, 38px);
+    color: var(--gold);
+    letter-spacing: 8px;
+    text-shadow: 0 0 40px rgba(200,168,75,0.4), 0 2px 4px rgba(0,0,0,0.8);
+  }
+  #header p {
+    font-family: 'Cinzel', serif;
+    font-size: 10px; letter-spacing: 5px;
+    color: var(--text-dim); margin-top: 6px;
+  }
 
-const ATTRIBUTES = ["TÉN", "LUM", "FEU", "EAU", "TER", "VEN", "DIV"];
-const RACES = ["Dr", "Ma", "Gé", "In", "Py", "Aq", "Ro", "Be", "Pl", "Fé", "Ze", "To", "Di", "Cy", "Cr"];
-const LEVELS = Array.from({ length: 12 }, (_, i) => i + 1);
+  /* ── NAV ─────────────────────────────────────────────────────────── */
+  #nav {
+    display: flex; gap: 0;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: relative; z-index: 1;
+    overflow-x: auto;
+  }
+  .nav-btn {
+    padding: 13px 22px;
+    background: none; border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    font-size: 11px; letter-spacing: 2px;
+    cursor: pointer; white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .nav-btn:hover { color: var(--gold-light); }
+  .nav-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .badge {
+    background: var(--gold); color: #1a0a00;
+    border-radius: 10px; padding: 1px 6px;
+    font-size: 10px; font-weight: 900;
+    margin-left: 6px; font-family: sans-serif;
+  }
 
-const CARD_TYPES = Object.keys(TYPE_COLORS);
-const isMonster = (t) => t && t.startsWith("Monstre");
+  /* ── LAYOUT ──────────────────────────────────────────────────────── */
+  #app { position: relative; z-index: 1; }
+  .layout {
+    display: flex;
+    height: calc(100vh - 132px);
+    overflow: hidden;
+  }
+  .sidebar {
+    width: 270px; min-width: 270px;
+    border-right: 1px solid var(--border);
+    padding: 18px 16px;
+    overflow-y: auto;
+    background: var(--bg2);
+  }
+  .main-area {
+    flex: 1; padding: 20px;
+    overflow-y: auto;
+  }
+  .preview-panel {
+    width: 240px; min-width: 240px;
+    border-left: 1px solid var(--border);
+    padding: 16px;
+    background: var(--bg2);
+    display: flex; flex-direction: column;
+    align-items: center; gap: 14px;
+    overflow-y: auto;
+  }
 
-const defaultCard = () => ({
-  id: Date.now(),
-  name: "",
-  type: "Monstre Normal",
-  attribute: "TÉN",
-  level: 4,
-  atk: 0,
-  def: 0,
-  race: "Dr",
-  description: "",
-  image: null,
-});
+  /* ── FORM ELEMENTS ───────────────────────────────────────────────── */
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--gold); margin-bottom: 14px;
+    text-transform: uppercase;
+  }
+  label.lbl {
+    display: block;
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--text-dim); margin-bottom: 4px;
+    text-transform: uppercase; font-family: 'Cinzel', serif;
+  }
+  .field { margin-bottom: 12px; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: 'EB Garamond', serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold-dark); }
+  textarea { height: 80px; resize: none; }
+  select option { background: #1a1206; }
 
-// ── Tiny card visual ──────────────────────────────────────────────────────────
-function CardMini({ card, onClick, onRemove, count }) {
-  const colors = TYPE_COLORS[card.type] || TYPE_COLORS["Monstre Normal"];
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        position: "relative",
-        width: 90,
-        height: 130,
-        borderRadius: 6,
-        background: colors.bg,
-        border: `2px solid ${colors.border}`,
-        cursor: "pointer",
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.6)",
-        transition: "transform 0.15s",
-        flexShrink: 0,
-      }}
-      onMouseEnter={e => e.currentTarget.style.transform = "scale(1.07)"}
-      onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-    >
-      {card.image ? (
-        <img src={card.image} alt={card.name} style={{ width: "100%", height: 70, objectFit: "cover" }} />
-      ) : (
-        <div style={{ width: "100%", height: 70, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>
-          {card.type === "Magie" ? "✦" : card.type === "Piège" ? "⚠" : "⚔"}
+  /* ── BUTTONS ─────────────────────────────────────────────────────── */
+  .btn-gold {
+    width: 100%; padding: 11px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    border: none; border-radius: 4px;
+    color: #1a0a00;
+    font-family: 'Cinzel', serif;
+    font-size: 11px; letter-spacing: 2px;
+    font-weight: 700; cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-gold:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-gold:active { transform: translateY(0); }
+  .btn-ghost {
+    padding: 6px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px; color: var(--gold);
+    font-size: 11px; cursor: pointer;
+    font-family: 'EB Garamond', serif;
+    transition: border-color 0.2s;
+  }
+  .btn-ghost:hover { border-color: var(--gold-dark); }
+  .btn-danger {
+    width: 100%; padding: 11px;
+    background: linear-gradient(135deg, #c84b00, #8b2800);
+    border: none; border-radius: 4px; color: #fff;
+    font-family: 'Cinzel', serif; font-size: 11px;
+    letter-spacing: 2px; cursor: pointer;
+  }
+
+  /* ── IMAGE DROP ZONE ─────────────────────────────────────────────── */
+  #drop-zone {
+    border: 2px dashed var(--border2);
+    border-radius: 6px; padding: 12px;
+    margin-bottom: 14px; cursor: pointer;
+    display: flex; gap: 12px; align-items: center;
+    background: var(--bg3);
+    transition: border-color 0.2s;
+  }
+  #drop-zone:hover, #drop-zone.drag-over { border-color: var(--gold-dark); }
+  #drop-zone img { width: 54px; height: 54px; object-fit: cover; border-radius: 4px; }
+  #drop-zone .dz-icon {
+    width: 54px; height: 54px; background: var(--bg);
+    border-radius: 4px; display: flex; align-items: center;
+    justify-content: center; font-size: 22px; flex-shrink: 0;
+  }
+  #drop-zone .dz-text { font-size: 10px; color: var(--text-dim); }
+  #drop-zone .dz-text strong { display: block; color: var(--text-dim); font-size: 11px; margin-bottom: 2px; }
+
+  /* ── STAT ROW ────────────────────────────────────────────────────── */
+  .stat-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    gap: 6px; margin-bottom: 12px;
+  }
+  .stat-row label.lbl { font-size: 8px; }
+  .stat-row input, .stat-row select { padding: 6px 6px; font-size: 11px; }
+
+  /* ── SEARCH BAR ──────────────────────────────────────────────────── */
+  #search-bar {
+    display: flex; gap: 10px; align-items: center;
+    margin-bottom: 18px;
+  }
+  #search-bar input { flex: 1; }
+  #search-bar select { width: 170px; }
+  #search-bar .count { color: var(--text-dim); font-size: 12px; white-space: nowrap; }
+
+  /* ── CARD GRID ───────────────────────────────────────────────────── */
+  #card-grid {
+    display: flex; flex-wrap: wrap; gap: 14px;
+  }
+  .card-wrap { display: flex; flex-direction: column; gap: 5px; }
+  .card-actions { display: flex; gap: 4px; }
+  .card-actions button {
+    flex: 1; padding: 4px 2px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 3px; color: var(--gold);
+    font-size: 10px; cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .card-actions button:hover { border-color: var(--gold-dark); }
+  .card-actions .del { color: #c84b00; }
+
+  /* ── MINI CARD ───────────────────────────────────────────────────── */
+  .card-mini {
+    position: relative; width: 90px; height: 130px;
+    border-radius: 6px; cursor: pointer;
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.7);
+    transition: transform 0.15s, box-shadow 0.15s;
+    flex-shrink: 0;
+  }
+  .card-mini:hover { transform: scale(1.08); box-shadow: 0 8px 24px rgba(0,0,0,0.8); }
+  .card-mini .cm-img {
+    width: 100%; height: 68px; object-fit: cover;
+  }
+  .card-mini .cm-placeholder {
+    width: 100%; height: 68px;
+    background: rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+  }
+  .card-mini .cm-body {
+    padding: 3px 5px; flex: 1;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .card-mini .cm-name {
+    font-size: 8.5px; font-weight: 700;
+    line-height: 1.2; overflow: hidden; max-height: 26px;
+  }
+  .card-mini .cm-stats { font-size: 8px; opacity: 0.75; }
+  .card-mini .cm-count {
+    position: absolute; top: 3px; right: 3px;
+    background: var(--gold); color: #1a0a00;
+    border-radius: 50%; width: 17px; height: 17px;
+    font-size: 9px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    font-family: sans-serif;
+  }
+  .card-mini .cm-remove {
+    position: absolute; top: 2px; left: 2px;
+    background: rgba(200,0,0,0.85); border: none;
+    border-radius: 50%; width: 17px; height: 17px;
+    color: #fff; font-size: 11px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1; padding: 0;
+  }
+
+  /* ── CARD PREVIEW (large) ────────────────────────────────────────── */
+  .card-preview {
+    width: 210px; border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.85);
+    overflow: hidden; font-size: 12px;
+  }
+  .cp-header {
+    padding: 7px 10px;
+    background: rgba(0,0,0,0.3);
+    font-family: 'Cinzel', serif;
+    font-weight: 700; font-size: 11px;
+    letter-spacing: 0.5px; line-height: 1.3;
+  }
+  .cp-img { width: 100%; height: 155px; object-fit: cover; display: block; }
+  .cp-placeholder {
+    width: 100%; height: 155px;
+    background: rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 52px;
+  }
+  .cp-body { padding: 8px 10px; }
+  .cp-type { font-size: 10px; opacity: 0.75; margin-bottom: 4px; }
+  .cp-stats { font-size: 10px; margin-bottom: 6px; line-height: 1.6; }
+  .cp-desc {
+    font-size: 9px; opacity: 0.85;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 5px; line-height: 1.5;
+    font-style: italic;
+  }
+
+  /* ── DECK LIST ───────────────────────────────────────────────────── */
+  .deck-item {
+    padding: 10px 14px; border-radius: 6px;
+    border: 1px solid var(--border);
+    margin-bottom: 8px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg3);
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .deck-item:hover { border-color: var(--gold-dark); }
+  .deck-item.active { background: #1e1608; border-color: var(--gold); }
+  .deck-item .deck-name {
+    font-family: 'Cinzel', serif; font-size: 13px;
+    color: var(--text);
+  }
+  .deck-item.active .deck-name { color: var(--gold); }
+  .deck-item .deck-count { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .deck-item .deck-del {
+    background: none; border: none;
+    color: #c84b00; cursor: pointer;
+    font-size: 16px; padding: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ── DECK PROGRESS BAR ───────────────────────────────────────────── */
+  .progress-track {
+    width: 120px; height: 8px;
+    background: var(--bg3); border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-dark));
+    transition: width 0.3s;
+  }
+
+  /* ── SAVE PAGE ───────────────────────────────────────────────────── */
+  .save-page { max-width: 600px; margin: 40px auto; padding: 0 20px; }
+  .save-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 22px; margin-bottom: 20px;
+  }
+  .save-card h3 {
+    font-family: 'Cinzel', serif; font-size: 14px;
+    color: var(--gold); margin-bottom: 8px;
+  }
+  .save-card p { font-size: 13px; color: var(--text-dim); margin-bottom: 14px; line-height: 1.6; }
+  .save-card.danger { border-color: #3a0a0a; }
+  .save-card.danger h3 { color: #c84b00; }
+
+  /* ── TEST PAGE ───────────────────────────────────────────────────── */
+  .test-page { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+  .hand-row { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 16px; }
+
+  /* ── NOTIFICATION ────────────────────────────────────────────────── */
+  #notif {
+    position: fixed; top: 20px; right: 20px; z-index: 9999;
+    padding: 11px 22px; border-radius: 6px;
+    font-family: 'Cinzel', serif; font-size: 12px;
+    font-weight: 700; letter-spacing: 1px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+    transform: translateY(-10px); opacity: 0;
+    transition: transform 0.25s, opacity 0.25s;
+    pointer-events: none;
+  }
+  #notif.show { transform: translateY(0); opacity: 1; }
+
+  /* ── EMPTY STATE ─────────────────────────────────────────────────── */
+  .empty {
+    text-align: center; color: var(--text-faint);
+    margin-top: 70px;
+  }
+  .empty .e-icon { font-size: 52px; margin-bottom: 14px; }
+  .empty .e-title { font-size: 14px; color: var(--text-dim); margin-bottom: 6px; }
+  .empty .e-sub { font-size: 12px; }
+
+  /* ── DIVIDER ─────────────────────────────────────────────────────── */
+  .gold-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dark), transparent);
+    margin: 14px 0;
+  }
+
+  /* ── SCROLLBAR ───────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold-dark); }
+
+  /* ── DECK NAME INPUT ROW ─────────────────────────────────────────── */
+  .new-deck-row { display: flex; gap: 6px; margin-bottom: 14px; }
+  .new-deck-row input { flex: 1; }
+  .new-deck-row button { white-space: nowrap; padding: 8px 14px; }
+
+  /* TABS */
+  .tab { display: none; }
+  .tab.active { display: block; }
+  .tab-layout { display: none; }
+  .tab-layout.active { display: flex; height: calc(100vh - 132px); overflow: hidden; }
+</style>
+</head>
+<body>
+
+<!-- NOTIFICATION -->
+<div id="notif"></div>
+
+<!-- HEADER -->
+<div id="header">
+  <h1>DUELLISTE</h1>
+  <p>CONSTRUCTEUR DE DECKS YU-GI-OH!</p>
+</div>
+
+<!-- NAV -->
+<div id="nav">
+  <button class="nav-btn active" onclick="switchTab('library')" id="nav-library">
+    📚 BIBLIOTHÈQUE <span class="badge" id="badge-cards">0</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('decks')" id="nav-decks">
+    🃏 MES DECKS <span class="badge" id="badge-decks">0</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('save')" id="nav-save">
+    💾 SAUVEGARDE
+  </button>
+  <button class="nav-btn" onclick="switchTab('test')" id="nav-test">
+    ⚔ TEST DECK
+  </button>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- ══ BIBLIOTHÈQUE ═══════════════════════════════════════════════ -->
+  <div class="tab-layout active" id="tab-library">
+    <!-- Sidebar: form -->
+    <div class="sidebar" id="form-sidebar">
+      <div class="section-title" id="form-title">+ Créer une carte</div>
+
+      <!-- Drop zone -->
+      <div id="drop-zone" onclick="document.getElementById('file-input').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDrop(event)">
+        <div class="dz-icon" id="dz-icon">🖼</div>
+        <div class="dz-text">
+          <strong>Illustration</strong>
+          Cliquez ou glissez une image<br>JPG · PNG · WEBP
         </div>
-      )}
-      <div style={{ padding: "3px 5px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 9, fontWeight: 700, color: colors.text, lineHeight: 1.2, overflow: "hidden", maxHeight: 28 }}>{card.name || "Sans nom"}</div>
-        {isMonster(card.type) && (
-          <div style={{ fontSize: 8, color: colors.text, opacity: 0.8 }}>{card.atk}/{card.def}</div>
-        )}
       </div>
-      {count > 1 && (
-        <div style={{ position: "absolute", top: 3, right: 3, background: "#c8a84b", color: "#1a0a00", borderRadius: "50%", width: 16, height: 16, fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {count}
-        </div>
-      )}
-      {onRemove && (
-        <button
-          onClick={e => { e.stopPropagation(); onRemove(card.id); }}
-          style={{ position: "absolute", top: 2, left: 2, background: "rgba(200,0,0,0.85)", border: "none", borderRadius: "50%", width: 16, height: 16, color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
-        >×</button>
-      )}
-    </div>
-  );
-}
+      <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFileInput(event)"/>
 
-// ── Large card preview ────────────────────────────────────────────────────────
-function CardPreview({ card }) {
-  const colors = TYPE_COLORS[card.type] || TYPE_COLORS["Monstre Normal"];
-  return (
-    <div style={{
-      width: 220, borderRadius: 10, background: colors.bg, border: `3px solid ${colors.border}`,
-      boxShadow: "0 8px 30px rgba(0,0,0,0.8)", color: colors.text, overflow: "hidden", fontSize: 12
-    }}>
-      <div style={{ padding: "6px 10px", background: "rgba(0,0,0,0.25)", fontFamily: "'Cinzel',serif", fontWeight: 700, fontSize: 11, letterSpacing: 1 }}>
-        {card.name || "Sans nom"}
-      </div>
-      {card.image ? (
-        <img src={card.image} alt="" style={{ width: "100%", height: 160, objectFit: "cover" }} />
-      ) : (
-        <div style={{ width: "100%", height: 160, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>
-          {card.type === "Magie" ? "✦" : card.type === "Piège" ? "⚠" : "⚔"}
-        </div>
-      )}
-      <div style={{ padding: "6px 10px" }}>
-        <div style={{ fontSize: 10, opacity: 0.8, marginBottom: 3 }}>{card.type}</div>
-        {isMonster(card.type) && (
-          <div style={{ fontSize: 10, marginBottom: 3 }}>
-            ★×{card.level} | {card.attribute} | {card.race}<br />
-            ATK {card.atk} / DEF {card.def}
-          </div>
-        )}
-        <div style={{ fontSize: 9, opacity: 0.85, borderTop: `1px solid ${colors.border}`, paddingTop: 4, marginTop: 4, lineHeight: 1.4 }}>
-          {card.description || "Aucune description."}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Main App ──────────────────────────────────────────────────────────────────
-export default function Duelliste() {
-  const [tab, setTab] = useState("library");
-  const [cards, setCards] = useState([]);
-  const [decks, setDecks] = useState([]);
-  const [activeDeckId, setActiveDeckId] = useState(null);
-  const [form, setForm] = useState(defaultCard());
-  const [editingId, setEditingId] = useState(null);
-  const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("Tous les types");
-  const [preview, setPreview] = useState(null);
-  const [newDeckName, setNewDeckName] = useState("");
-  const [loaded, setLoaded] = useState(false);
-  const [notification, setNotification] = useState(null);
-  const [testHand, setTestHand] = useState([]);
-  const fileRef = useRef();
-
-  const notify = (msg, color = "#c8a84b") => {
-    setNotification({ msg, color });
-    setTimeout(() => setNotification(null), 2500);
-  };
-
-  // Load from persistent storage
-  useEffect(() => {
-    (async () => {
-      try {
-        const c = await window.storage.get("duelliste-cards");
-        const d = await window.storage.get("duelliste-decks");
-        const a = await window.storage.get("duelliste-active-deck");
-        if (c) setCards(JSON.parse(c.value));
-        if (d) setDecks(JSON.parse(d.value));
-        if (a) setActiveDeckId(JSON.parse(a.value));
-      } catch (_) {}
-      setLoaded(true);
-    })();
-  }, []);
-
-  // Save cards
-  useEffect(() => {
-    if (!loaded) return;
-    window.storage.set("duelliste-cards", JSON.stringify(cards)).catch(() => {});
-  }, [cards, loaded]);
-
-  // Save decks
-  useEffect(() => {
-    if (!loaded) return;
-    window.storage.set("duelliste-decks", JSON.stringify(decks)).catch(() => {});
-  }, [decks, loaded]);
-
-  // Save active deck
-  useEffect(() => {
-    if (!loaded) return;
-    window.storage.set("duelliste-active-deck", JSON.stringify(activeDeckId)).catch(() => {});
-  }, [activeDeckId, loaded]);
-
-  const handleImage = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setForm(f => ({ ...f, image: ev.target.result }));
-    reader.readAsDataURL(file);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setForm(f => ({ ...f, image: ev.target.result }));
-    reader.readAsDataURL(file);
-  };
-
-  const handleSubmit = () => {
-    if (!form.name.trim()) { notify("⚠ Le nom est requis", "#c84b00"); return; }
-    if (editingId) {
-      setCards(cs => cs.map(c => c.id === editingId ? { ...form, id: editingId } : c));
-      notify("✓ Carte modifiée");
-      setEditingId(null);
-    } else {
-      const newCard = { ...form, id: Date.now() };
-      setCards(cs => [...cs, newCard]);
-      notify("✓ Carte créée");
-    }
-    setForm(defaultCard());
-  };
-
-  const deleteCard = (id) => {
-    setCards(cs => cs.filter(c => c.id !== id));
-    setDecks(ds => ds.map(d => ({ ...d, cardIds: d.cardIds.filter(cid => cid !== id) })));
-    notify("Carte supprimée", "#888");
-  };
-
-  const startEdit = (card) => {
-    setForm({ ...card });
-    setEditingId(card.id);
-    setTab("library");
-  };
-
-  const activeDeck = decks.find(d => d.id === activeDeckId);
-
-  const addToDeck = (cardId) => {
-    if (!activeDeck) { notify("⚠ Sélectionne ou crée un deck d'abord", "#c84b00"); return; }
-    const count = activeDeck.cardIds.filter(id => id === cardId).length;
-    if (count >= 3) { notify("Maximum 3 exemplaires par carte"); return; }
-    if (activeDeck.cardIds.length >= 60) { notify("Deck plein (60 cartes max)"); return; }
-    setDecks(ds => ds.map(d => d.id === activeDeckId ? { ...d, cardIds: [...d.cardIds, cardId] } : d));
-    notify("+ Carte ajoutée au deck");
-  };
-
-  const removeFromDeck = (cardId) => {
-    setDecks(ds => ds.map(d => {
-      if (d.id !== activeDeckId) return d;
-      const idx = d.cardIds.indexOf(cardId);
-      if (idx === -1) return d;
-      const newIds = [...d.cardIds];
-      newIds.splice(idx, 1);
-      return { ...d, cardIds: newIds };
-    }));
-  };
-
-  const createDeck = () => {
-    if (!newDeckName.trim()) { notify("⚠ Nomme le deck", "#c84b00"); return; }
-    const d = { id: Date.now(), name: newDeckName.trim(), cardIds: [] };
-    setDecks(ds => [...ds, d]);
-    setActiveDeckId(d.id);
-    setNewDeckName("");
-    notify(`✓ Deck "${d.name}" créé`);
-  };
-
-  const deleteDeck = (id) => {
-    setDecks(ds => ds.filter(d => d.id !== id));
-    if (activeDeckId === id) setActiveDeckId(null);
-    notify("Deck supprimé", "#888");
-  };
-
-  const drawHand = () => {
-    if (!activeDeck || activeDeck.cardIds.length < 5) { notify("⚠ Le deck doit avoir au moins 5 cartes"); return; }
-    const shuffled = [...activeDeck.cardIds].sort(() => Math.random() - 0.5);
-    setTestHand(shuffled.slice(0, 5).map(id => cards.find(c => c.id === id)).filter(Boolean));
-  };
-
-  const filteredCards = cards.filter(c => {
-    const matchName = c.name.toLowerCase().includes(search.toLowerCase());
-    const matchType = filterType === "Tous les types" || c.type === filterType;
-    return matchName && matchType;
-  });
-
-  if (!loaded) return (
-    <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#c8a84b", fontFamily: "'Cinzel',serif", fontSize: 18 }}>
-      Chargement...
-    </div>
-  );
-
-  // ── Styles ─────────────────────────────────────────────────────────────────
-  const S = {
-    app: { background: "#0a0a0a", minHeight: "100vh", fontFamily: "'Segoe UI',sans-serif", color: "#e8dcc8" },
-    header: { textAlign: "center", padding: "24px 0 10px", borderBottom: "1px solid #2a2010" },
-    title: { fontFamily: "'Cinzel Decorative',serif", fontSize: 36, color: "#c8a84b", letterSpacing: 6, margin: 0 },
-    subtitle: { fontSize: 11, letterSpacing: 4, color: "#8a7040", marginTop: 6 },
-    nav: { display: "flex", gap: 0, padding: "0 24px", borderBottom: "1px solid #2a2010", background: "#0d0d0d" },
-    navBtn: (active) => ({
-      padding: "12px 24px", background: "none", border: "none", cursor: "pointer",
-      color: active ? "#c8a84b" : "#6a5a40", fontSize: 12, letterSpacing: 2, fontFamily: "'Cinzel',serif",
-      borderBottom: active ? "2px solid #c8a84b" : "2px solid transparent", transition: "color 0.2s"
-    }),
-    badge: { background: "#c8a84b", color: "#1a0a00", borderRadius: 10, padding: "1px 6px", fontSize: 10, fontWeight: 900, marginLeft: 6 },
-    layout: { display: "flex", height: "calc(100vh - 130px)", overflow: "hidden" },
-    sidebar: { width: 270, borderRight: "1px solid #2a2010", padding: 16, overflowY: "auto", background: "#0d0d0d", flexShrink: 0 },
-    main: { flex: 1, padding: 20, overflowY: "auto" },
-    sectionTitle: { fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: 3, color: "#c8a84b", marginBottom: 12, textTransform: "uppercase" },
-    input: { width: "100%", background: "#1a1206", border: "1px solid #3a2a10", borderRadius: 4, color: "#e8dcc8", padding: "8px 10px", fontSize: 12, outline: "none", boxSizing: "border-box" },
-    select: { width: "100%", background: "#1a1206", border: "1px solid #3a2a10", borderRadius: 4, color: "#e8dcc8", padding: "8px 10px", fontSize: 12, outline: "none", boxSizing: "border-box" },
-    smallInput: { background: "#1a1206", border: "1px solid #3a2a10", borderRadius: 4, color: "#e8dcc8", padding: "6px 8px", fontSize: 12, outline: "none", width: "100%", boxSizing: "border-box" },
-    btn: { width: "100%", padding: "10px", background: "linear-gradient(135deg,#c8a84b,#8b6914)", border: "none", borderRadius: 4, color: "#1a0a00", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: 2, cursor: "pointer", fontWeight: 700 },
-    btnSecondary: { padding: "6px 12px", background: "#1a1206", border: "1px solid #3a2a10", borderRadius: 4, color: "#c8a84b", fontSize: 11, cursor: "pointer" },
-    label: { display: "block", fontSize: 10, letterSpacing: 2, color: "#8a7040", marginBottom: 4, textTransform: "uppercase" },
-    field: { marginBottom: 12 },
-    grid: { display: "flex", flexWrap: "wrap", gap: 12 },
-    deckCard: (active) => ({
-      padding: "10px 14px", background: active ? "#2a1a06" : "#111", border: `1px solid ${active ? "#c8a84b" : "#2a2010"}`,
-      borderRadius: 6, cursor: "pointer", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center"
-    }),
-  };
-
-  return (
-    <div style={S.app}>
-      {/* Notification */}
-      {notification && (
-        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: notification.color, color: "#1a0a00", padding: "10px 20px", borderRadius: 6, fontWeight: 700, fontSize: 13, boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
-          {notification.msg}
-        </div>
-      )}
-
-      {/* Header */}
-      <div style={S.header}>
-        <h1 style={S.title}>DUELLISTE</h1>
-        <p style={S.subtitle}>CONSTRUCTEUR DE DECKS YU-GI-OH!</p>
+      <div class="field">
+        <label class="lbl">Nom *</label>
+        <input type="text" id="f-name" placeholder="ex: Magicien Sombre"/>
       </div>
 
-      {/* Nav */}
-      <div style={S.nav}>
-        {[
-          { key: "library", label: "BIBLIOTHÈQUE", count: cards.length },
-          { key: "decks", label: "MES DECKS", count: decks.length },
-          { key: "save", label: "SAUVEGARDE", count: null },
-          { key: "test", label: "TEST DECK", count: null },
-        ].map(({ key, label, count }) => (
-          <button key={key} style={S.navBtn(tab === key)} onClick={() => setTab(key)}>
-            {label}{count !== null && <span style={S.badge}>{count}</span>}
-          </button>
-        ))}
+      <div class="field">
+        <label class="lbl">Type *</label>
+        <select id="f-type" onchange="toggleMonsterFields()">
+          <option>Monstre Normal</option>
+          <option>Monstre Effet</option>
+          <option>Monstre Fusion</option>
+          <option>Monstre Synchro</option>
+          <option>Monstre Xyz</option>
+          <option>Monstre Lien</option>
+          <option>Magie</option>
+          <option>Piège</option>
+        </select>
       </div>
 
-      {/* ── BIBLIOTHÈQUE ────────────────────────────────────────────────── */}
-      {tab === "library" && (
-        <div style={S.layout}>
-          {/* Sidebar: form */}
-          <div style={S.sidebar}>
-            <div style={S.sectionTitle}>{editingId ? "✏ Modifier la carte" : "+ Créer une carte"}</div>
-
-            {/* Image drop zone */}
-            <div
-              onClick={() => fileRef.current.click()}
-              onDrop={handleDrop}
-              onDragOver={e => e.preventDefault()}
-              style={{ border: "2px dashed #3a2a10", borderRadius: 6, padding: 12, marginBottom: 12, cursor: "pointer", display: "flex", gap: 10, alignItems: "center", background: "#111" }}
-            >
-              {form.image ? (
-                <img src={form.image} alt="" style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 4 }} />
-              ) : (
-                <div style={{ width: 50, height: 50, background: "#1a1206", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🖼</div>
-              )}
-              <div style={{ fontSize: 10, color: "#6a5a40" }}>
-                <div style={{ fontWeight: 700, color: "#8a7040" }}>Illustration</div>
-                <div>Cliquez ou glissez une image</div>
-                <div>JPG · PNG · WEBP</div>
-              </div>
-              <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImage} />
-            </div>
-
-            <div style={S.field}>
-              <label style={S.label}>Nom *</label>
-              <input style={S.input} placeholder="ex: Magicien Sombre" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-            </div>
-
-            <div style={S.field}>
-              <label style={S.label}>Type *</label>
-              <select style={S.select} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
-                {CARD_TYPES.map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-
-            {isMonster(form.type) && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
-                <div>
-                  <label style={{ ...S.label, fontSize: 8 }}>Attr.</label>
-                  <select style={{ ...S.smallInput, fontSize: 10 }} value={form.attribute} onChange={e => setForm(f => ({ ...f, attribute: e.target.value }))}>
-                    {ATTRIBUTES.map(a => <option key={a}>{a}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ ...S.label, fontSize: 8 }}>Niv.</label>
-                  <select style={{ ...S.smallInput, fontSize: 10 }} value={form.level} onChange={e => setForm(f => ({ ...f, level: +e.target.value }))}>
-                    {LEVELS.map(l => <option key={l}>{l}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ ...S.label, fontSize: 8 }}>ATK</label>
-                  <input type="number" style={{ ...S.smallInput, fontSize: 10 }} value={form.atk} onChange={e => setForm(f => ({ ...f, atk: +e.target.value }))} />
-                </div>
-                <div>
-                  <label style={{ ...S.label, fontSize: 8 }}>DEF</label>
-                  <input type="number" style={{ ...S.smallInput, fontSize: 10 }} value={form.def} onChange={e => setForm(f => ({ ...f, def: +e.target.value }))} />
-                </div>
-                <div>
-                  <label style={{ ...S.label, fontSize: 8 }}>Race</label>
-                  <select style={{ ...S.smallInput, fontSize: 10 }} value={form.race} onChange={e => setForm(f => ({ ...f, race: e.target.value }))}>
-                    {RACES.map(r => <option key={r}>{r}</option>)}
-                  </select>
-                </div>
-              </div>
-            )}
-
-            <div style={S.field}>
-              <label style={S.label}>Description / Effet</label>
-              <textarea style={{ ...S.input, height: 80, resize: "none" }} placeholder="Description ou effet de la carte..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-            </div>
-
-            <button style={S.btn} onClick={handleSubmit}>{editingId ? "MODIFIER LA CARTE" : "CRÉER LA CARTE"}</button>
-            {editingId && (
-              <button style={{ ...S.btnSecondary, width: "100%", marginTop: 8 }} onClick={() => { setEditingId(null); setForm(defaultCard()); }}>Annuler</button>
-            )}
-          </div>
-
-          {/* Main: card grid */}
-          <div style={S.main}>
-            <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
-              <input style={{ ...S.input, flex: 1 }} placeholder="Rechercher une carte..." value={search} onChange={e => setSearch(e.target.value)} />
-              <select style={{ ...S.select, width: 160 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
-                <option>Tous les types</option>
-                {CARD_TYPES.map(t => <option key={t}>{t}</option>)}
-              </select>
-              <div style={{ color: "#6a5a40", fontSize: 12, whiteSpace: "nowrap" }}>{filteredCards.length} carte(s)</div>
-            </div>
-
-            {filteredCards.length === 0 ? (
-              <div style={{ textAlign: "center", color: "#3a2a10", marginTop: 80, fontSize: 14 }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>🃏</div>
-                <div>Aucune carte dans la bibliothèque.</div>
-                <div style={{ fontSize: 12, marginTop: 8 }}>Créez votre première carte avec le formulaire à gauche.</div>
-              </div>
-            ) : (
-              <div style={S.grid}>
-                {filteredCards.map(card => (
-                  <div key={card.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <CardMini card={card} onClick={() => setPreview(card)} />
-                    <div style={{ display: "flex", gap: 4 }}>
-                      <button style={{ ...S.btnSecondary, flex: 1, fontSize: 9, padding: "4px" }} onClick={() => addToDeck(card.id)}>+ Deck</button>
-                      <button style={{ ...S.btnSecondary, flex: 1, fontSize: 9, padding: "4px" }} onClick={() => startEdit(card)}>✏</button>
-                      <button style={{ ...S.btnSecondary, flex: 1, fontSize: 9, padding: "4px", color: "#c84b00" }} onClick={() => deleteCard(card.id)}>🗑</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Card preview panel */}
-          {preview && (
-            <div style={{ width: 250, borderLeft: "1px solid #2a2010", padding: 16, background: "#0d0d0d", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
-                <div style={S.sectionTitle}>Aperçu</div>
-                <button onClick={() => setPreview(null)} style={{ background: "none", border: "none", color: "#6a5a40", cursor: "pointer", fontSize: 16 }}>✕</button>
-              </div>
-              <CardPreview card={preview} />
-              <button style={S.btn} onClick={() => addToDeck(preview.id)}>+ Ajouter au deck</button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── MES DECKS ───────────────────────────────────────────────────── */}
-      {tab === "decks" && (
-        <div style={S.layout}>
-          {/* Deck list */}
-          <div style={S.sidebar}>
-            <div style={S.sectionTitle}>Mes decks</div>
-            <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-              <input style={{ ...S.input, flex: 1 }} placeholder="Nom du deck..." value={newDeckName} onChange={e => setNewDeckName(e.target.value)} onKeyDown={e => e.key === "Enter" && createDeck()} />
-              <button style={{ ...S.btnSecondary, whiteSpace: "nowrap" }} onClick={createDeck}>+</button>
-            </div>
-            {decks.length === 0 ? (
-              <div style={{ color: "#3a2a10", fontSize: 12, textAlign: "center", marginTop: 20 }}>Aucun deck créé</div>
-            ) : decks.map(d => (
-              <div key={d.id} style={S.deckCard(d.id === activeDeckId)} onClick={() => setActiveDeckId(d.id)}>
-                <div>
-                  <div style={{ fontSize: 12, fontFamily: "'Cinzel',serif", color: d.id === activeDeckId ? "#c8a84b" : "#e8dcc8" }}>{d.name}</div>
-                  <div style={{ fontSize: 10, color: "#6a5a40" }}>{d.cardIds.length} cartes</div>
-                </div>
-                <button style={{ background: "none", border: "none", color: "#c84b00", cursor: "pointer", fontSize: 14 }} onClick={e => { e.stopPropagation(); deleteDeck(d.id); }}>🗑</button>
-              </div>
-            ))}
-          </div>
-
-          {/* Deck content */}
-          <div style={S.main}>
-            {!activeDeck ? (
-              <div style={{ textAlign: "center", color: "#3a2a10", marginTop: 80 }}>
-                <div style={{ fontSize: 48 }}>🃏</div>
-                <div style={{ marginTop: 12 }}>Sélectionne ou crée un deck</div>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <div>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 18, color: "#c8a84b" }}>{activeDeck.name}</div>
-                    <div style={{ fontSize: 11, color: "#6a5a40" }}>{activeDeck.cardIds.length}/60 cartes</div>
-                  </div>
-                  <div style={{ width: 120, height: 8, background: "#1a1206", borderRadius: 4, overflow: "hidden" }}>
-                    <div style={{ width: `${(activeDeck.cardIds.length / 60) * 100}%`, height: "100%", background: "linear-gradient(90deg,#c8a84b,#8b6914)" }} />
-                  </div>
-                </div>
-
-                {activeDeck.cardIds.length === 0 ? (
-                  <div style={{ color: "#3a2a10", textAlign: "center", marginTop: 40 }}>
-                    Ce deck est vide. Ajoute des cartes depuis la Bibliothèque.
-                  </div>
-                ) : (
-                  <div style={S.grid}>
-                    {(() => {
-                      const seen = new Set();
-                      const unique = [];
-                      for (const id of activeDeck.cardIds) {
-                        if (!seen.has(id)) { seen.add(id); unique.push(id); }
-                      }
-                      return unique.map(id => {
-                        const card = cards.find(c => c.id === id);
-                        if (!card) return null;
-                        const count = activeDeck.cardIds.filter(cid => cid === id).length;
-                        return (
-                          <div key={id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <CardMini card={card} count={count} onClick={() => setPreview(card)} onRemove={removeFromDeck} />
-                            <button style={{ ...S.btnSecondary, fontSize: 9, padding: "4px" }} onClick={() => addToDeck(id)}>+ Encore</button>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {preview && (
-            <div style={{ width: 250, borderLeft: "1px solid #2a2010", padding: 16, background: "#0d0d0d", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
-                <div style={S.sectionTitle}>Aperçu</div>
-                <button onClick={() => setPreview(null)} style={{ background: "none", border: "none", color: "#6a5a40", cursor: "pointer", fontSize: 16 }}>✕</button>
-              </div>
-              <CardPreview card={preview} />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── SAUVEGARDE ──────────────────────────────────────────────────── */}
-      {tab === "save" && (
-        <div style={{ ...S.main, maxWidth: 600, margin: "40px auto" }}>
-          <div style={S.sectionTitle}>Sauvegarde & Importation</div>
-
-          <div style={{ background: "#111", border: "1px solid #2a2010", borderRadius: 8, padding: 20, marginBottom: 20 }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, color: "#c8a84b", marginBottom: 8 }}>📤 Exporter</div>
-            <div style={{ fontSize: 12, color: "#6a5a40", marginBottom: 12 }}>
-              Téléchargez toutes vos cartes et decks en JSON pour les sauvegarder localement.
-            </div>
-            <button style={S.btn} onClick={() => {
-              const data = JSON.stringify({ cards, decks }, null, 2);
-              const blob = new Blob([data], { type: "application/json" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url; a.download = "duelliste-backup.json"; a.click();
-              URL.revokeObjectURL(url);
-              notify("✓ Export téléchargé");
-            }}>EXPORTER LES DONNÉES</button>
-          </div>
-
-          <div style={{ background: "#111", border: "1px solid #2a2010", borderRadius: 8, padding: 20, marginBottom: 20 }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, color: "#c8a84b", marginBottom: 8 }}>📥 Importer</div>
-            <div style={{ fontSize: 12, color: "#6a5a40", marginBottom: 12 }}>
-              Importez un fichier JSON précédemment exporté pour restaurer vos données.
-            </div>
-            <input type="file" accept=".json" onChange={e => {
-              const file = e.target.files[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = (ev) => {
-                try {
-                  const data = JSON.parse(ev.target.result);
-                  if (data.cards) setCards(data.cards);
-                  if (data.decks) setDecks(data.decks);
-                  notify(`✓ Import réussi (${data.cards?.length || 0} cartes, ${data.decks?.length || 0} decks)`);
-                } catch { notify("⚠ Fichier invalide", "#c84b00"); }
-              };
-              reader.readAsText(file);
-            }} style={{ ...S.input, cursor: "pointer" }} />
-          </div>
-
-          <div style={{ background: "#111", border: "1px solid #3a0a0a", borderRadius: 8, padding: 20 }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, color: "#c84b00", marginBottom: 8 }}>⚠ Zone de danger</div>
-            <div style={{ fontSize: 12, color: "#6a5a40", marginBottom: 12 }}>
-              Supprime toutes les cartes et tous les decks. Cette action est irréversible.
-            </div>
-            <button style={{ ...S.btn, background: "linear-gradient(135deg,#c84b00,#8b2800)", color: "#fff" }}
-              onClick={() => {
-                if (window.confirm("Effacer TOUTES les données ?")) {
-                  setCards([]); setDecks([]); setActiveDeckId(null);
-                  notify("Données effacées", "#c84b00");
-                }
-              }}>EFFACER TOUTES LES DONNÉES</button>
-          </div>
-        </div>
-      )}
-
-      {/* ── TEST DECK ───────────────────────────────────────────────────── */}
-      {tab === "test" && (
-        <div style={{ ...S.main, maxWidth: 800, margin: "40px auto" }}>
-          <div style={S.sectionTitle}>Test de deck</div>
-
-          <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 24 }}>
-            <select style={{ ...S.select, width: 220 }} value={activeDeckId || ""} onChange={e => setActiveDeckId(+e.target.value || null)}>
-              <option value="">Choisir un deck...</option>
-              {decks.map(d => <option key={d.id} value={d.id}>{d.name} ({d.cardIds.length} cartes)</option>)}
+      <div id="monster-fields">
+        <div class="stat-row">
+          <div>
+            <label class="lbl">Attr.</label>
+            <select id="f-attr">
+              <option>TÉN</option><option>LUM</option><option>FEU</option>
+              <option>EAU</option><option>TER</option><option>VEN</option><option>DIV</option>
             </select>
-            <button style={{ ...S.btn, width: "auto", padding: "10px 24px" }} onClick={drawHand}>🃏 Piocher une main de 5</button>
           </div>
-
-          {testHand.length > 0 && (
-            <>
-              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, color: "#c8a84b", marginBottom: 16 }}>Main initiale :</div>
-              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                {testHand.map((card, i) => <CardPreview key={i} card={card} />)}
-              </div>
-            </>
-          )}
-
-          {testHand.length === 0 && (
-            <div style={{ textAlign: "center", color: "#3a2a10", marginTop: 60, fontSize: 14 }}>
-              <div style={{ fontSize: 48 }}>🃏</div>
-              <div style={{ marginTop: 12 }}>Sélectionne un deck et pioche une main pour tester</div>
-            </div>
-          )}
+          <div>
+            <label class="lbl">Niv.</label>
+            <select id="f-level">
+              <option>1</option><option>2</option><option>3</option><option>4</option>
+              <option>5</option><option>6</option><option>7</option><option>8</option>
+              <option>9</option><option>10</option><option>11</option><option>12</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">ATK</label>
+            <input type="number" id="f-atk" value="0" min="0"/>
+          </div>
+          <div>
+            <label class="lbl">DEF</label>
+            <input type="number" id="f-def" value="0" min="0"/>
+          </div>
+          <div>
+            <label class="lbl">Race</label>
+            <select id="f-race">
+              <option>Dr</option><option>Ma</option><option>Gé</option><option>In</option>
+              <option>Py</option><option>Aq</option><option>Ro</option><option>Be</option>
+              <option>Pl</option><option>Fé</option><option>Ze</option><option>To</option>
+              <option>Di</option><option>Cy</option><option>Cr</option>
+            </select>
+          </div>
         </div>
-      )}
+      </div>
+
+      <div class="field">
+        <label class="lbl">Description / Effet</label>
+        <textarea id="f-desc" placeholder="Description ou effet de la carte..."></textarea>
+      </div>
+
+      <button class="btn-gold" id="submit-btn" onclick="submitCard()">CRÉER LA CARTE</button>
+      <button class="btn-ghost" id="cancel-btn" style="width:100%;margin-top:8px;display:none" onclick="cancelEdit()">Annuler</button>
     </div>
-  );
+
+    <!-- Main: card grid -->
+    <div class="main-area">
+      <div id="search-bar">
+        <input type="text" id="search-input" placeholder="Rechercher une carte..." oninput="renderLibrary()"/>
+        <select id="filter-type" onchange="renderLibrary()">
+          <option>Tous les types</option>
+          <option>Monstre Normal</option><option>Monstre Effet</option>
+          <option>Monstre Fusion</option><option>Monstre Synchro</option>
+          <option>Monstre Xyz</option><option>Monstre Lien</option>
+          <option>Magie</option><option>Piège</option>
+        </select>
+        <span class="count" id="card-count">0 carte(s)</span>
+      </div>
+      <div id="card-grid"></div>
+    </div>
+
+    <!-- Preview panel -->
+    <div class="preview-panel" id="preview-panel" style="display:none">
+      <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
+        <div class="section-title" style="margin-bottom:0">Aperçu</div>
+        <button onclick="closePreview()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px">✕</button>
+      </div>
+      <div id="preview-content"></div>
+      <button class="btn-gold" onclick="addToActiveDeck(currentPreviewId)">+ Ajouter au deck</button>
+    </div>
+  </div>
+
+  <!-- ══ MES DECKS ══════════════════════════════════════════════════ -->
+  <div class="tab-layout" id="tab-decks">
+    <!-- Deck list sidebar -->
+    <div class="sidebar">
+      <div class="section-title">Mes decks</div>
+      <div class="new-deck-row">
+        <input type="text" id="new-deck-name" placeholder="Nom du deck..." onkeydown="if(event.key==='Enter')createDeck()"/>
+        <button class="btn-ghost" onclick="createDeck()">+</button>
+      </div>
+      <div id="deck-list"></div>
+    </div>
+
+    <!-- Deck content -->
+    <div class="main-area" id="deck-content">
+      <div class="empty">
+        <div class="e-icon">🃏</div>
+        <div class="e-title">Sélectionne ou crée un deck</div>
+      </div>
+    </div>
+
+    <!-- Preview panel decks -->
+    <div class="preview-panel" id="preview-panel-decks" style="display:none">
+      <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
+        <div class="section-title" style="margin-bottom:0">Aperçu</div>
+        <button onclick="closePreviewDecks()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px">✕</button>
+      </div>
+      <div id="preview-content-decks"></div>
+    </div>
+  </div>
+
+  <!-- ══ SAUVEGARDE ═════════════════════════════════════════════════ -->
+  <div class="tab" id="tab-save">
+    <div class="save-page">
+      <div class="section-title">Sauvegarde & Importation</div>
+
+      <div class="save-card">
+        <h3>📤 Exporter</h3>
+        <p>Téléchargez toutes vos cartes et decks en fichier JSON pour les sauvegarder localement ou les transférer.</p>
+        <button class="btn-gold" onclick="exportData()">EXPORTER LES DONNÉES</button>
+      </div>
+
+      <div class="save-card">
+        <h3>📥 Importer</h3>
+        <p>Importez un fichier JSON précédemment exporté pour restaurer vos cartes et decks.</p>
+        <input type="file" id="import-file" accept=".json" onchange="importData(event)" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:8px 10px;font-size:13px;cursor:pointer"/>
+      </div>
+
+      <div class="save-card danger">
+        <h3>⚠ Zone de danger</h3>
+        <p>Supprime définitivement toutes les cartes et tous les decks. Cette action est irréversible.</p>
+        <button class="btn-danger" onclick="clearAll()">EFFACER TOUTES LES DONNÉES</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TEST DECK ══════════════════════════════════════════════════ -->
+  <div class="tab" id="tab-test">
+    <div class="test-page">
+      <div class="section-title">Test de deck — main initiale</div>
+      <div style="display:flex;gap:14px;align-items:center;margin-bottom:24px;flex-wrap:wrap">
+        <select id="test-deck-select" style="width:220px">
+          <option value="">Choisir un deck...</option>
+        </select>
+        <button class="btn-gold" style="width:auto;padding:10px 26px" onclick="drawHand()">🃏 Piocher 5 cartes</button>
+        <button class="btn-ghost" onclick="drawHand()">↺ Repiocher</button>
+      </div>
+      <div id="test-hand" class="hand-row"></div>
+      <div id="test-empty" class="empty">
+        <div class="e-icon">🃏</div>
+        <div class="e-title">Sélectionne un deck et pioche</div>
+        <div class="e-sub">Simule ta main de départ</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════════
+const TYPE_COLORS = {
+  "Monstre Normal":  { bg:"#c8a84b", border:"#8b6914", text:"#1a0a00" },
+  "Monstre Effet":   { bg:"#c84b00", border:"#8b2800", text:"#fff5e6" },
+  "Monstre Fusion":  { bg:"#6b3fa0", border:"#3d1f6e", text:"#f0e6ff" },
+  "Monstre Synchro": { bg:"#ccc",    border:"#888",    text:"#111"    },
+  "Monstre Xyz":     { bg:"#1a1a1a", border:"#555",    text:"#fff"    },
+  "Monstre Lien":    { bg:"#003cb3", border:"#001f6e", text:"#e6f0ff" },
+  "Magie":           { bg:"#1a8c55", border:"#0a4d2e", text:"#e6fff4" },
+  "Piège":           { bg:"#8c1a55", border:"#4d0a2e", text:"#ffe6f0" },
+};
+const isMonster = t => t && t.startsWith("Monstre");
+
+let cards = [], decks = [], activeDeckId = null;
+let editingId = null, currentPreviewId = null, currentImage = null;
+
+// ── Persistence ────────────────────────────────────────────────────
+function save() {
+  localStorage.setItem("duelliste_cards", JSON.stringify(cards));
+  localStorage.setItem("duelliste_decks", JSON.stringify(decks));
+  localStorage.setItem("duelliste_active", JSON.stringify(activeDeckId));
 }
+function load() {
+  try { cards  = JSON.parse(localStorage.getItem("duelliste_cards") || "[]"); } catch { cards = []; }
+  try { decks  = JSON.parse(localStorage.getItem("duelliste_decks") || "[]"); } catch { decks = []; }
+  try { activeDeckId = JSON.parse(localStorage.getItem("duelliste_active") || "null"); } catch { activeDeckId = null; }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NOTIFICATION
+// ═══════════════════════════════════════════════════════════════════
+let notifTimer;
+function notify(msg, color = "#c8a84b", textColor = "#1a0a00") {
+  const el = document.getElementById("notif");
+  el.textContent = msg;
+  el.style.background = color;
+  el.style.color = textColor;
+  el.classList.add("show");
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════════
+function switchTab(tab) {
+  ["library","decks","save","test"].forEach(t => {
+    const el = document.getElementById("tab-"+t);
+    if (!el) return;
+    el.classList.toggle("active", t === tab);
+  });
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("nav-"+tab)?.classList.add("active");
+  if (tab === "test") populateTestSelect();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// IMAGE HANDLING
+// ═══════════════════════════════════════════════════════════════════
+function handleFileInput(e) {
+  const file = e.target.files[0];
+  if (file) readImage(file);
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById("drop-zone").classList.remove("drag-over");
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith("image/")) readImage(file);
+}
+function readImage(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentImage = ev.target.result;
+    const icon = document.getElementById("dz-icon");
+    icon.innerHTML = `<img src="${currentImage}" style="width:54px;height:54px;object-fit:cover;border-radius:4px"/>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FORM
+// ═══════════════════════════════════════════════════════════════════
+function toggleMonsterFields() {
+  const type = document.getElementById("f-type").value;
+  document.getElementById("monster-fields").style.display = isMonster(type) ? "" : "none";
+}
+
+function getFormData() {
+  return {
+    id: editingId || Date.now(),
+    name: document.getElementById("f-name").value.trim(),
+    type: document.getElementById("f-type").value,
+    attribute: document.getElementById("f-attr").value,
+    level: parseInt(document.getElementById("f-level").value),
+    atk: parseInt(document.getElementById("f-atk").value) || 0,
+    def: parseInt(document.getElementById("f-def").value) || 0,
+    race: document.getElementById("f-race").value,
+    description: document.getElementById("f-desc").value.trim(),
+    image: currentImage || null,
+  };
+}
+
+function fillForm(card) {
+  document.getElementById("f-name").value = card.name;
+  document.getElementById("f-type").value = card.type;
+  document.getElementById("f-attr").value = card.attribute || "TÉN";
+  document.getElementById("f-level").value = card.level || 4;
+  document.getElementById("f-atk").value = card.atk || 0;
+  document.getElementById("f-def").value = card.def || 0;
+  document.getElementById("f-race").value = card.race || "Dr";
+  document.getElementById("f-desc").value = card.description || "";
+  currentImage = card.image || null;
+  const icon = document.getElementById("dz-icon");
+  if (card.image) {
+    icon.innerHTML = `<img src="${card.image}" style="width:54px;height:54px;object-fit:cover;border-radius:4px"/>`;
+  } else {
+    icon.innerHTML = "🖼";
+  }
+  toggleMonsterFields();
+}
+
+function resetForm() {
+  document.getElementById("f-name").value = "";
+  document.getElementById("f-type").value = "Monstre Normal";
+  document.getElementById("f-attr").value = "TÉN";
+  document.getElementById("f-level").value = "4";
+  document.getElementById("f-atk").value = "0";
+  document.getElementById("f-def").value = "0";
+  document.getElementById("f-race").value = "Dr";
+  document.getElementById("f-desc").value = "";
+  currentImage = null;
+  document.getElementById("dz-icon").innerHTML = "🖼";
+  document.getElementById("file-input").value = "";
+  toggleMonsterFields();
+}
+
+function submitCard() {
+  const data = getFormData();
+  if (!data.name) { notify("⚠ Le nom est requis", "#c84b00", "#fff"); return; }
+  if (editingId) {
+    const idx = cards.findIndex(c => c.id === editingId);
+    if (idx !== -1) cards[idx] = data;
+    notify("✓ Carte modifiée");
+    cancelEdit();
+  } else {
+    data.id = Date.now();
+    cards.push(data);
+    notify("✓ Carte créée");
+    resetForm();
+  }
+  save(); updateBadges(); renderLibrary();
+}
+
+function startEdit(id) {
+  const card = cards.find(c => c.id === id);
+  if (!card) return;
+  editingId = id;
+  fillForm(card);
+  document.getElementById("form-title").textContent = "✏ Modifier la carte";
+  document.getElementById("submit-btn").textContent = "MODIFIER LA CARTE";
+  document.getElementById("cancel-btn").style.display = "";
+  switchTab("library");
+  document.getElementById("form-sidebar").scrollTop = 0;
+}
+
+function cancelEdit() {
+  editingId = null;
+  resetForm();
+  document.getElementById("form-title").textContent = "+ Créer une carte";
+  document.getElementById("submit-btn").textContent = "CRÉER LA CARTE";
+  document.getElementById("cancel-btn").style.display = "none";
+}
+
+function deleteCard(id) {
+  cards = cards.filter(c => c.id !== id);
+  decks = decks.map(d => ({ ...d, cardIds: d.cardIds.filter(cid => cid !== id) }));
+  save(); updateBadges(); renderLibrary(); renderDeckContent();
+  notify("Carte supprimée", "#555", "#ccc");
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LIBRARY RENDER
+// ═══════════════════════════════════════════════════════════════════
+function renderLibrary() {
+  const search = document.getElementById("search-input").value.toLowerCase();
+  const filter = document.getElementById("filter-type").value;
+  const filtered = cards.filter(c => {
+    return c.name.toLowerCase().includes(search) &&
+           (filter === "Tous les types" || c.type === filter);
+  });
+  document.getElementById("card-count").textContent = filtered.length + " carte(s)";
+  const grid = document.getElementById("card-grid");
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty" style="width:100%"><div class="e-icon">🃏</div><div class="e-title">Aucune carte trouvée</div><div class="e-sub">Créez votre première carte avec le formulaire à gauche</div></div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(card => `
+    <div class="card-wrap">
+      ${miniCardHTML(card, false, `showPreview(${card.id})`)}
+      <div class="card-actions">
+        <button onclick="addToActiveDeck(${card.id})">+ Deck</button>
+        <button onclick="startEdit(${card.id})">✏</button>
+        <button class="del" onclick="deleteCard(${card.id})">🗑</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CARD HTML BUILDERS
+// ═══════════════════════════════════════════════════════════════════
+function miniCardHTML(card, showRemove = false, clickFn = "") {
+  const c = TYPE_COLORS[card.type] || TYPE_COLORS["Monstre Normal"];
+  const icon = card.type === "Magie" ? "✦" : card.type === "Piège" ? "⚠" : "⚔";
+  const img = card.image
+    ? `<img class="cm-img" src="${card.image}" alt=""/>`
+    : `<div class="cm-placeholder">${icon}</div>`;
+  const remove = showRemove
+    ? `<button class="cm-remove" onclick="event.stopPropagation();removeFromDeck(${card.id})">×</button>`
+    : "";
+  const stats = isMonster(card.type) ? `<div class="cm-stats">${card.atk}/${card.def}</div>` : "";
+  return `
+    <div class="card-mini" style="background:${c.bg};border:2px solid ${c.border}" onclick="${clickFn}">
+      ${img}
+      <div class="cm-body">
+        <div class="cm-name" style="color:${c.text}">${escHtml(card.name || "Sans nom")}</div>
+        <div style="color:${c.text}">${stats}</div>
+      </div>
+      ${remove}
+    </div>`;
+}
+
+function previewCardHTML(card) {
+  const c = TYPE_COLORS[card.type] || TYPE_COLORS["Monstre Normal"];
+  const icon = card.type === "Magie" ? "✦" : card.type === "Piège" ? "⚠" : "⚔";
+  const img = card.image
+    ? `<img class="cp-img" src="${card.image}" alt=""/>`
+    : `<div class="cp-placeholder">${icon}</div>`;
+  const stats = isMonster(card.type) ? `
+    <div class="cp-stats">
+      ★ ×${card.level} &nbsp;|&nbsp; ${card.attribute} &nbsp;|&nbsp; ${card.race}<br>
+      ATK <strong>${card.atk}</strong> &nbsp;/&nbsp; DEF <strong>${card.def}</strong>
+    </div>` : "";
+  return `
+    <div class="card-preview" style="background:${c.bg};border:3px solid ${c.border};color:${c.text}">
+      <div class="cp-header">${escHtml(card.name || "Sans nom")}</div>
+      ${img}
+      <div class="cp-body">
+        <div class="cp-type">${card.type}</div>
+        ${stats}
+        <div class="cp-desc">${escHtml(card.description || "Aucune description.")}</div>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PREVIEW
+// ═══════════════════════════════════════════════════════════════════
+function showPreview(id) {
+  const card = cards.find(c => c.id === id);
+  if (!card) return;
+  currentPreviewId = id;
+  document.getElementById("preview-content").innerHTML = previewCardHTML(card);
+  document.getElementById("preview-panel").style.display = "flex";
+}
+function closePreview() {
+  document.getElementById("preview-panel").style.display = "none";
+  currentPreviewId = null;
+}
+function showPreviewDecks(id) {
+  const card = cards.find(c => c.id === id);
+  if (!card) return;
+  document.getElementById("preview-content-decks").innerHTML = previewCardHTML(card);
+  document.getElementById("preview-panel-decks").style.display = "flex";
+}
+function closePreviewDecks() {
+  document.getElementById("preview-panel-decks").style.display = "none";
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DECKS
+// ═══════════════════════════════════════════════════════════════════
+function createDeck() {
+  const name = document.getElementById("new-deck-name").value.trim();
+  if (!name) { notify("⚠ Nomme le deck", "#c84b00", "#fff"); return; }
+  const d = { id: Date.now(), name, cardIds: [] };
+  decks.push(d);
+  activeDeckId = d.id;
+  document.getElementById("new-deck-name").value = "";
+  save(); updateBadges(); renderDeckList(); renderDeckContent();
+  notify(`✓ Deck "${name}" créé`);
+}
+
+function deleteDeck(id) {
+  decks = decks.filter(d => d.id !== id);
+  if (activeDeckId === id) activeDeckId = decks.length ? decks[decks.length-1].id : null;
+  save(); updateBadges(); renderDeckList(); renderDeckContent();
+  notify("Deck supprimé", "#555", "#ccc");
+}
+
+function selectDeck(id) {
+  activeDeckId = id;
+  save(); renderDeckList(); renderDeckContent();
+}
+
+function addToActiveDeck(cardId) {
+  if (!activeDeckId) { notify("⚠ Sélectionne ou crée un deck d'abord", "#c84b00", "#fff"); return; }
+  const deck = decks.find(d => d.id === activeDeckId);
+  if (!deck) return;
+  const count = deck.cardIds.filter(id => id === cardId).length;
+  if (count >= 3) { notify("Maximum 3 exemplaires par carte"); return; }
+  if (deck.cardIds.length >= 60) { notify("Deck plein (60 cartes max)"); return; }
+  deck.cardIds.push(cardId);
+  save(); renderDeckContent(); renderDeckList();
+  notify("+ Carte ajoutée au deck");
+}
+
+function removeFromDeck(cardId) {
+  const deck = decks.find(d => d.id === activeDeckId);
+  if (!deck) return;
+  const idx = deck.cardIds.indexOf(cardId);
+  if (idx !== -1) deck.cardIds.splice(idx, 1);
+  save(); renderDeckContent(); renderDeckList();
+}
+
+function renderDeckList() {
+  const el = document.getElementById("deck-list");
+  if (decks.length === 0) {
+    el.innerHTML = `<div style="color:var(--text-faint);font-size:12px;text-align:center;margin-top:20px">Aucun deck créé</div>`;
+    return;
+  }
+  el.innerHTML = decks.map(d => `
+    <div class="deck-item ${d.id === activeDeckId ? 'active' : ''}" onclick="selectDeck(${d.id})">
+      <div>
+        <div class="deck-name">${escHtml(d.name)}</div>
+        <div class="deck-count">${d.cardIds.length} carte${d.cardIds.length!==1?"s":""}</div>
+      </div>
+      <button class="deck-del" onclick="event.stopPropagation();deleteDeck(${d.id})">🗑</button>
+    </div>`).join("");
+}
+
+function renderDeckContent() {
+  const el = document.getElementById("deck-content");
+  const deck = decks.find(d => d.id === activeDeckId);
+  if (!deck) {
+    el.innerHTML = `<div class="empty"><div class="e-icon">🃏</div><div class="e-title">Sélectionne ou crée un deck</div></div>`;
+    return;
+  }
+  // Unique card IDs with counts
+  const countMap = {};
+  deck.cardIds.forEach(id => countMap[id] = (countMap[id]||0)+1);
+  const uniqueIds = [...new Set(deck.cardIds)];
+  const pct = Math.min(100, Math.round((deck.cardIds.length/60)*100));
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div>
+        <div style="font-family:'Cinzel',serif;font-size:18px;color:var(--gold)">${escHtml(deck.name)}</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:2px">${deck.cardIds.length}/60 cartes</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    ${uniqueIds.length === 0
+      ? `<div class="empty"><div class="e-icon">✦</div><div class="e-title">Ce deck est vide</div><div class="e-sub">Ajoute des cartes depuis la Bibliothèque</div></div>`
+      : `<div id="card-grid" style="display:flex;flex-wrap:wrap;gap:14px">
+          ${uniqueIds.map(id => {
+            const card = cards.find(c => c.id === id);
+            if (!card) return "";
+            const cnt = countMap[id];
+            const c = TYPE_COLORS[card.type] || TYPE_COLORS["Monstre Normal"];
+            const icon = card.type === "Magie" ? "✦" : card.type === "Piège" ? "⚠" : "⚔";
+            const img = card.image ? `<img class="cm-img" src="${card.image}" alt=""/>` : `<div class="cm-placeholder">${icon}</div>`;
+            const stats = isMonster(card.type) ? `<div class="cm-stats" style="color:${c.text}">${card.atk}/${card.def}</div>` : "";
+            return `
+              <div class="card-wrap">
+                <div class="card-mini" style="background:${c.bg};border:2px solid ${c.border}" onclick="showPreviewDecks(${id})">
+                  ${img}
+                  <div class="cm-body">
+                    <div class="cm-name" style="color:${c.text}">${escHtml(card.name||"Sans nom")}</div>
+                    ${stats}
+                  </div>
+                  ${cnt>1?`<div class="cm-count">×${cnt}</div>`:""}
+                  <button class="cm-remove" onclick="event.stopPropagation();removeFromDeck(${id})">×</button>
+                </div>
+                <div class="card-actions">
+                  <button onclick="addToActiveDeck(${id})">+1</button>
+                  <button class="del" onclick="removeFromDeck(${id})">−1</button>
+                </div>
+              </div>`;
+          }).join("")}
+        </div>`
+    }`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SAVE / IMPORT / EXPORT
+// ═══════════════════════════════════════════════════════════════════
+function exportData() {
+  const data = JSON.stringify({ cards, decks }, null, 2);
+  const blob = new Blob([data], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "duelliste-backup.json"; a.click();
+  URL.revokeObjectURL(url);
+  notify("✓ Backup téléchargé");
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.cards) cards = data.cards;
+      if (data.decks) decks = data.decks;
+      save(); updateBadges(); renderLibrary(); renderDeckList(); renderDeckContent();
+      notify(`✓ Import réussi — ${cards.length} cartes, ${decks.length} decks`);
+    } catch { notify("⚠ Fichier invalide", "#c84b00", "#fff"); }
+  };
+  reader.readAsText(file);
+}
+
+function clearAll() {
+  if (!confirm("Effacer TOUTES les données ? Cette action est irréversible.")) return;
+  cards = []; decks = []; activeDeckId = null;
+  save(); updateBadges(); renderLibrary(); renderDeckList(); renderDeckContent();
+  notify("Données effacées", "#555", "#ccc");
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TEST DECK
+// ═══════════════════════════════════════════════════════════════════
+function populateTestSelect() {
+  const sel = document.getElementById("test-deck-select");
+  const current = sel.value;
+  sel.innerHTML = `<option value="">Choisir un deck...</option>` +
+    decks.map(d => `<option value="${d.id}">${escHtml(d.name)} (${d.cardIds.length} cartes)</option>`).join("");
+  if (current) sel.value = current;
+}
+
+function drawHand() {
+  const deckId = parseInt(document.getElementById("test-deck-select").value);
+  const deck = decks.find(d => d.id === deckId);
+  if (!deck || deck.cardIds.length < 5) {
+    notify("⚠ Le deck doit avoir au moins 5 cartes", "#c84b00", "#fff");
+    return;
+  }
+  const shuffled = [...deck.cardIds].sort(() => Math.random() - 0.5);
+  const hand = shuffled.slice(0, 5).map(id => cards.find(c => c.id === id)).filter(Boolean);
+  document.getElementById("test-empty").style.display = "none";
+  document.getElementById("test-hand").innerHTML = hand.map(c => previewCardHTML(c)).join("");
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════
+function updateBadges() {
+  document.getElementById("badge-cards").textContent = cards.length;
+  document.getElementById("badge-decks").textContent = decks.length;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+load();
+toggleMonsterFields();
+updateBadges();
+renderLibrary();
+renderDeckList();
+renderDeckContent();
+</script>
+</body>
+</html>
