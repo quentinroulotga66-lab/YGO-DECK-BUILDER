@@ -1030,31 +1030,81 @@ function exportData() {
 function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
-  // Reset input so same file can be re-imported
   e.target.value = "";
-
   const reader = new FileReader();
   reader.onload = ev => {
     try {
-      // Decode as UTF-8 from ArrayBuffer to avoid truncation on large base64 files
       const bytes = new Uint8Array(ev.target.result);
       const text = new TextDecoder("utf-8").decode(bytes);
       const data = JSON.parse(text);
       if (!data || typeof data !== "object") throw new Error("invalid");
-      if (Array.isArray(data.cards)) cards = data.cards;
-      if (Array.isArray(data.decks)) decks = data.decks;
-      // Restore active deck if it still exists
-      if (activeDeckId && !decks.find(d => d.id === activeDeckId)) activeDeckId = null;
+
+      // FORMAT A : notre propre export { cards:[...], decks:[...] }
+      if (Array.isArray(data.cards) && (!data.cards[0] || data.cards[0].type && data.cards[0].type.indexOf(" ") > -1)) {
+        if (Array.isArray(data.cards)) cards = data.cards;
+        if (Array.isArray(data.decks)) decks = data.decks;
+
+      // FORMAT B : ancien logiciel { library:[...], cardImages:{}, decks:[{main:[{cardId,qty}]}] }
+      } else if (Array.isArray(data.library)) {
+        const imgs = data.cardImages || {};
+        const typeMap = function(t) {
+          if (!t) return "Monstre Normal";
+          t = t.toLowerCase();
+          if (t === "monstre-effet" || t === "monstre_effet") return "Monstre Effet";
+          if (t === "fusion")   return "Monstre Fusion";
+          if (t === "synchro")  return "Monstre Synchro";
+          if (t === "xyz")      return "Monstre Xyz";
+          if (t === "lien" || t === "link") return "Monstre Lien";
+          if (t.startsWith("magie") || t.startsWith("magic") || t === "rituel") return "Magie";
+          if (t.startsWith("piege") || t.startsWith("piège") || t.startsWith("trap")) return "Piège";
+          if (t === "monstre" || t === "monstre-normal" || t === "normal") return "Monstre Normal";
+          return "Monstre Normal";
+        };
+        const attrMap = function(a) {
+          if (!a) return "TÉN";
+          const m = {"TÉNÈBRES":"TÉN","TENEBRES":"TÉN","TÉNEBRES":"TÉN","LUMIÈRE":"LUM","LUMIERE":"LUM",
+                     "FEU":"FEU","EAU":"EAU","TERRE":"TER","VENT":"VEN","DIVIN":"DIV",
+                     "DARK":"TÉN","LIGHT":"LUM","FIRE":"FEU","WATER":"EAU","EARTH":"TER","WIND":"VEN","DIVINE":"DIV"};
+          return m[a.toUpperCase()] || a.slice(0,3).toUpperCase() || "TÉN";
+        };
+        cards = data.library.map(function(c) {
+          return {
+            id: c.id,
+            name: c.name || "Sans nom",
+            type: typeMap(c.type),
+            attribute: attrMap(c.attribute),
+            level: c.level || 0,
+            atk: c.atk != null ? c.atk : 0,
+            def: c.def != null ? c.def : 0,
+            race: c.race ? c.race.slice(0,3) : "Dr",
+            description: c.desc || c.description || "",
+            image: imgs[c.id] || null
+          };
+        });
+        decks = (data.decks || []).map(function(d) {
+          var allCards = (d.main||[]).concat(d.extra||[]).concat(d.side||[]);
+          var cardIds = [];
+          allCards.forEach(function(entry) {
+            var qty = entry.qty || 1;
+            for (var i = 0; i < qty; i++) cardIds.push(entry.cardId);
+          });
+          return { id: d.id || Date.now(), name: d.name || "Deck importé", cardIds: cardIds };
+        });
+
+      } else {
+        throw new Error("Format inconnu");
+      }
+
+      if (activeDeckId && !decks.find(function(d){ return d.id === activeDeckId; })) activeDeckId = null;
       if (!activeDeckId && decks.length) activeDeckId = decks[0].id;
       save(); updateBadges(); renderLibrary(); renderDeckList(); renderDeckContent();
-      notify(`✓ Import réussi — ${cards.length} cartes, ${decks.length} decks`);
+      notify("✓ Import réussi — " + cards.length + " cartes, " + decks.length + " deck(s)");
     } catch(err) {
       console.error("Import error:", err);
       notify("⚠ Fichier invalide ou corrompu", "#c84b00", "#fff");
     }
   };
-  reader.onerror = () => notify("⚠ Erreur de lecture du fichier", "#c84b00", "#fff");
-  // Read as ArrayBuffer for reliable handling of large files with base64 images
+  reader.onerror = function() { notify("⚠ Erreur de lecture du fichier", "#c84b00", "#fff"); };
   reader.readAsArrayBuffer(file);
 }
 
