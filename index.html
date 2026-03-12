@@ -1,1197 +1,693 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Duelliste — Constructeur de Decks Yu-Gi-Oh!</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
-<style>
-  :root {
-    --gold: #c8a84b; --gold-dark: #8b6914; --gold-light: #e8cc80;
-    --bg: #080806; --bg2: #0e0d0a; --bg3: #161410;
-    --border: #2a2010; --border2: #3a3020;
-    --text: #e8dcc8; --text-dim: #8a7a60; --text-faint: #3a3020;
-    --red: #c84b00; --red-dark: #8b2800;
-    --normal: #c8a84b; --effect: #c84b00; --fusion: #6b3fa0;
-    --synchro: #b0b0b0; --xyz: #333; --link: #003cb3;
-    --magic: #1a8c55; --trap: #8c1a55;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'EB Garamond', serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-  /* Subtle grain overlay */
-  body::before {
-    content: '';
-    position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    opacity: 0.4;
-  }
-
-  /* ── HEADER ─────────────────────────────────────────────────────── */
-  #header {
-    text-align: center;
-    padding: 28px 0 14px;
-    border-bottom: 1px solid var(--border);
-    position: relative; z-index: 1;
-    background: linear-gradient(180deg, #100e08 0%, transparent 100%);
-  }
-  #header h1 {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: clamp(22px, 4vw, 38px);
-    color: var(--gold);
-    letter-spacing: 8px;
-    text-shadow: 0 0 40px rgba(200,168,75,0.4), 0 2px 4px rgba(0,0,0,0.8);
-  }
-  #header p {
-    font-family: 'Cinzel', serif;
-    font-size: 10px; letter-spacing: 5px;
-    color: var(--text-dim); margin-top: 6px;
-  }
-
-  /* ── NAV ─────────────────────────────────────────────────────────── */
-  #nav {
-    display: flex; gap: 0;
-    padding: 0 20px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg2);
-    position: relative; z-index: 1;
-    overflow-x: auto;
-  }
-  .nav-btn {
-    padding: 13px 22px;
-    background: none; border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--text-dim);
-    font-family: 'Cinzel', serif;
-    font-size: 11px; letter-spacing: 2px;
-    cursor: pointer; white-space: nowrap;
-    transition: color 0.2s, border-color 0.2s;
-  }
-  .nav-btn:hover { color: var(--gold-light); }
-  .nav-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
-  .badge {
-    background: var(--gold); color: #1a0a00;
-    border-radius: 10px; padding: 1px 6px;
-    font-size: 10px; font-weight: 900;
-    margin-left: 6px; font-family: sans-serif;
-  }
-
-  /* ── LAYOUT ──────────────────────────────────────────────────────── */
-  #app { position: relative; z-index: 1; }
-  .layout {
-    display: flex;
-    height: calc(100vh - 132px);
-    overflow: hidden;
-  }
-  .sidebar {
-    width: 270px; min-width: 270px;
-    border-right: 1px solid var(--border);
-    padding: 18px 16px;
-    overflow-y: auto;
-    background: var(--bg2);
-  }
-  .main-area {
-    flex: 1; padding: 20px;
-    overflow-y: auto;
-  }
-  .preview-panel {
-    width: 240px; min-width: 240px;
-    border-left: 1px solid var(--border);
-    padding: 16px;
-    background: var(--bg2);
-    display: flex; flex-direction: column;
-    align-items: center; gap: 14px;
-    overflow-y: auto;
-  }
-
-  /* ── FORM ELEMENTS ───────────────────────────────────────────────── */
-  .section-title {
-    font-family: 'Cinzel', serif;
-    font-size: 10px; letter-spacing: 3px;
-    color: var(--gold); margin-bottom: 14px;
-    text-transform: uppercase;
-  }
-  label.lbl {
-    display: block;
-    font-size: 9px; letter-spacing: 2px;
-    color: var(--text-dim); margin-bottom: 4px;
-    text-transform: uppercase; font-family: 'Cinzel', serif;
-  }
-  .field { margin-bottom: 12px; }
-  input[type=text], input[type=number], select, textarea {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border2);
-    border-radius: 4px;
-    color: var(--text);
-    padding: 8px 10px;
-    font-size: 13px;
-    font-family: 'EB Garamond', serif;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  input:focus, select:focus, textarea:focus { border-color: var(--gold-dark); }
-  textarea { height: 80px; resize: none; }
-  select option { background: #1a1206; }
-
-  /* ── BUTTONS ─────────────────────────────────────────────────────── */
-  .btn-gold {
-    width: 100%; padding: 11px;
-    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-    border: none; border-radius: 4px;
-    color: #1a0a00;
-    font-family: 'Cinzel', serif;
-    font-size: 11px; letter-spacing: 2px;
-    font-weight: 700; cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
-  }
-  .btn-gold:hover { opacity: 0.9; transform: translateY(-1px); }
-  .btn-gold:active { transform: translateY(0); }
-  .btn-ghost {
-    padding: 6px 12px;
-    background: var(--bg3);
-    border: 1px solid var(--border2);
-    border-radius: 4px; color: var(--gold);
-    font-size: 11px; cursor: pointer;
-    font-family: 'EB Garamond', serif;
-    transition: border-color 0.2s;
-  }
-  .btn-ghost:hover { border-color: var(--gold-dark); }
-  .btn-danger {
-    width: 100%; padding: 11px;
-    background: linear-gradient(135deg, #c84b00, #8b2800);
-    border: none; border-radius: 4px; color: #fff;
-    font-family: 'Cinzel', serif; font-size: 11px;
-    letter-spacing: 2px; cursor: pointer;
-  }
-
-  /* ── IMAGE DROP ZONE ─────────────────────────────────────────────── */
-  #drop-zone {
-    border: 2px dashed var(--border2);
-    border-radius: 6px; padding: 12px;
-    margin-bottom: 14px; cursor: pointer;
-    display: flex; gap: 12px; align-items: center;
-    background: var(--bg3);
-    transition: border-color 0.2s;
-  }
-  #drop-zone:hover, #drop-zone.drag-over { border-color: var(--gold-dark); }
-  #drop-zone img { width: 54px; height: 54px; object-fit: cover; border-radius: 4px; }
-  #drop-zone .dz-icon {
-    width: 54px; height: 54px; background: var(--bg);
-    border-radius: 4px; display: flex; align-items: center;
-    justify-content: center; font-size: 22px; flex-shrink: 0;
-  }
-  #drop-zone .dz-text { font-size: 10px; color: var(--text-dim); }
-  #drop-zone .dz-text strong { display: block; color: var(--text-dim); font-size: 11px; margin-bottom: 2px; }
-
-  /* ── STAT ROW ────────────────────────────────────────────────────── */
-  .stat-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-    gap: 6px; margin-bottom: 12px;
-  }
-  .stat-row label.lbl { font-size: 8px; }
-  .stat-row input, .stat-row select { padding: 6px 6px; font-size: 11px; }
-
-  /* ── SEARCH BAR ──────────────────────────────────────────────────── */
-  #search-bar {
-    display: flex; gap: 10px; align-items: center;
-    margin-bottom: 18px;
-  }
-  #search-bar input { flex: 1; }
-  #search-bar select { width: 170px; }
-  #search-bar .count { color: var(--text-dim); font-size: 12px; white-space: nowrap; }
-
-  /* ── CARD GRID ───────────────────────────────────────────────────── */
-  #card-grid {
-    display: flex; flex-wrap: wrap; gap: 14px;
-  }
-  .card-wrap { display: flex; flex-direction: column; gap: 5px; }
-  .card-actions { display: flex; gap: 4px; }
-  .card-actions button {
-    flex: 1; padding: 4px 2px;
-    background: var(--bg3); border: 1px solid var(--border2);
-    border-radius: 3px; color: var(--gold);
-    font-size: 10px; cursor: pointer;
-    transition: border-color 0.15s;
-  }
-  .card-actions button:hover { border-color: var(--gold-dark); }
-  .card-actions .del { color: #c84b00; }
-
-  /* ── MINI CARD ───────────────────────────────────────────────────── */
-  .card-mini {
-    position: relative; width: 90px; height: 130px;
-    border-radius: 6px; cursor: pointer;
-    overflow: hidden; display: flex; flex-direction: column;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.7);
-    transition: transform 0.15s, box-shadow 0.15s;
-    flex-shrink: 0;
-  }
-  .card-mini:hover { transform: scale(1.08); box-shadow: 0 8px 24px rgba(0,0,0,0.8); }
-  .card-mini .cm-img {
-    width: 100%; height: 68px; object-fit: cover;
-  }
-  .card-mini .cm-placeholder {
-    width: 100%; height: 68px;
-    background: rgba(0,0,0,0.3);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-  }
-  .card-mini .cm-body {
-    padding: 3px 5px; flex: 1;
-    display: flex; flex-direction: column; justify-content: space-between;
-  }
-  .card-mini .cm-name {
-    font-size: 8.5px; font-weight: 700;
-    line-height: 1.2; overflow: hidden; max-height: 26px;
-  }
-  .card-mini .cm-stats { font-size: 8px; opacity: 0.75; }
-  .card-mini .cm-count {
-    position: absolute; top: 3px; right: 3px;
-    background: var(--gold); color: #1a0a00;
-    border-radius: 50%; width: 17px; height: 17px;
-    font-size: 9px; font-weight: 900;
-    display: flex; align-items: center; justify-content: center;
-    font-family: sans-serif;
-  }
-  .card-mini .cm-remove {
-    position: absolute; top: 2px; left: 2px;
-    background: rgba(200,0,0,0.85); border: none;
-    border-radius: 50%; width: 17px; height: 17px;
-    color: #fff; font-size: 11px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    line-height: 1; padding: 0;
-  }
-
-  /* ── CARD PREVIEW (large) ────────────────────────────────────────── */
-  .card-preview {
-    width: 210px; border-radius: 10px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.85);
-    overflow: hidden; font-size: 12px;
-  }
-  .cp-header {
-    padding: 7px 10px;
-    background: rgba(0,0,0,0.3);
-    font-family: 'Cinzel', serif;
-    font-weight: 700; font-size: 11px;
-    letter-spacing: 0.5px; line-height: 1.3;
-  }
-  .cp-img { width: 100%; height: 155px; object-fit: cover; display: block; }
-  .cp-placeholder {
-    width: 100%; height: 155px;
-    background: rgba(0,0,0,0.3);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 52px;
-  }
-  .cp-body { padding: 8px 10px; }
-  .cp-type { font-size: 10px; opacity: 0.75; margin-bottom: 4px; }
-  .cp-stats { font-size: 10px; margin-bottom: 6px; line-height: 1.6; }
-  .cp-desc {
-    font-size: 9px; opacity: 0.85;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding-top: 5px; line-height: 1.5;
-    font-style: italic;
-  }
-
-  /* ── DECK LIST ───────────────────────────────────────────────────── */
-  .deck-item {
-    padding: 10px 14px; border-radius: 6px;
-    border: 1px solid var(--border);
-    margin-bottom: 8px; cursor: pointer;
-    display: flex; justify-content: space-between; align-items: center;
-    background: var(--bg3);
-    transition: border-color 0.2s, background 0.2s;
-  }
-  .deck-item:hover { border-color: var(--gold-dark); }
-  .deck-item.active { background: #1e1608; border-color: var(--gold); }
-  .deck-item .deck-name {
-    font-family: 'Cinzel', serif; font-size: 13px;
-    color: var(--text);
-  }
-  .deck-item.active .deck-name { color: var(--gold); }
-  .deck-item .deck-count { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-  .deck-item .deck-del {
-    background: none; border: none;
-    color: #c84b00; cursor: pointer;
-    font-size: 16px; padding: 4px;
-    flex-shrink: 0;
-  }
-
-  /* ── DECK PROGRESS BAR ───────────────────────────────────────────── */
-  .progress-track {
-    width: 120px; height: 8px;
-    background: var(--bg3); border-radius: 4px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--gold), var(--gold-dark));
-    transition: width 0.3s;
-  }
-
-  /* ── SAVE PAGE ───────────────────────────────────────────────────── */
-  .save-page { max-width: 600px; margin: 40px auto; padding: 0 20px; }
-  .save-card {
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 8px; padding: 22px; margin-bottom: 20px;
-  }
-  .save-card h3 {
-    font-family: 'Cinzel', serif; font-size: 14px;
-    color: var(--gold); margin-bottom: 8px;
-  }
-  .save-card p { font-size: 13px; color: var(--text-dim); margin-bottom: 14px; line-height: 1.6; }
-  .save-card.danger { border-color: #3a0a0a; }
-  .save-card.danger h3 { color: #c84b00; }
-
-  /* ── TEST PAGE ───────────────────────────────────────────────────── */
-  .test-page { max-width: 900px; margin: 40px auto; padding: 0 20px; }
-  .hand-row { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 16px; }
-
-  /* ── NOTIFICATION ────────────────────────────────────────────────── */
-  #notif {
-    position: fixed; top: 20px; right: 20px; z-index: 9999;
-    padding: 11px 22px; border-radius: 6px;
-    font-family: 'Cinzel', serif; font-size: 12px;
-    font-weight: 700; letter-spacing: 1px;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.6);
-    transform: translateY(-10px); opacity: 0;
-    transition: transform 0.25s, opacity 0.25s;
-    pointer-events: none;
-  }
-  #notif.show { transform: translateY(0); opacity: 1; }
-
-  /* ── EMPTY STATE ─────────────────────────────────────────────────── */
-  .empty {
-    text-align: center; color: var(--text-faint);
-    margin-top: 70px;
-  }
-  .empty .e-icon { font-size: 52px; margin-bottom: 14px; }
-  .empty .e-title { font-size: 14px; color: var(--text-dim); margin-bottom: 6px; }
-  .empty .e-sub { font-size: 12px; }
-
-  /* ── DIVIDER ─────────────────────────────────────────────────────── */
-  .gold-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold-dark), transparent);
-    margin: 14px 0;
-  }
-
-  /* ── SCROLLBAR ───────────────────────────────────────────────────── */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--gold-dark); }
-
-  /* ── DECK NAME INPUT ROW ─────────────────────────────────────────── */
-  .new-deck-row { display: flex; gap: 6px; margin-bottom: 14px; }
-  .new-deck-row input { flex: 1; }
-  .new-deck-row button { white-space: nowrap; padding: 8px 14px; }
-
-  /* TABS */
-  .tab { display: none; }
-  .tab.active { display: block; }
-  .tab-layout { display: none; }
-  .tab-layout.active { display: flex; height: calc(100vh - 132px); overflow: hidden; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yu-Gi-Oh! Deck Lab</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .header, .card {
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      border: 1px solid #e5e7eb;
+    }
+    .header { padding: 24px; margin-bottom: 24px; }
+    .title { font-size: 32px; font-weight: 700; margin: 0 0 8px; }
+    .subtitle { color: #4b5563; margin: 0; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+    .tab {
+      border: 1px solid #d1d5db;
+      background: white;
+      padding: 12px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tab.active { background: #111827; color: white; }
+    .grid { display: grid; gap: 24px; }
+    .grid-2 { grid-template-columns: 1.2fr 0.8fr; }
+    .grid-deck { grid-template-columns: 0.95fr 1.05fr; }
+    .grid-duel { grid-template-columns: 0.9fr 1.1fr; }
+    .card { padding: 20px; }
+    .card h2 { margin-top: 0; font-size: 22px; }
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: white;
+    }
+    .field textarea { min-height: 120px; resize: vertical; }
+    .inline-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    button.primary, button.secondary, .arrow-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.primary { background: #111827; color: white; }
+    button.secondary { background: white; color: #111827; border: 1px solid #d1d5db; }
+    .arrow-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .arrow-btn { background: white; border: 1px solid #d1d5db; }
+    .arrow-btn.active { background: #111827; color: white; }
+    .preview-box, .list-item, .stat-box, .log-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #fff;
+    }
+    .preview-box { padding: 16px; }
+    .muted { color: #6b7280; }
+    .list { display: flex; flex-direction: column; gap: 10px; max-height: 520px; overflow: auto; }
+    .list-item { padding: 14px; display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .stat-box { padding: 14px; }
+    .stat-number { font-size: 26px; font-weight: 700; }
+    .duel-box { padding: 14px; border: 1px solid #e5e7eb; border-radius: 14px; }
+    .log-list { display: flex; flex-direction: column; gap: 10px; max-height: 520px; overflow: auto; }
+    .log-item { padding: 12px 14px; }
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #e5e7eb;
+      font-weight: 700;
+    }
+    @media (max-width: 900px) {
+      .grid-2, .grid-deck, .grid-duel, .inline-grid, .stats { grid-template-columns: 1fr; }
+      .arrow-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
 </head>
 <body>
+  <div id="root"></div>
 
-<!-- NOTIFICATION -->
-<div id="notif"></div>
+  <script type="text/babel">
+    const monsterKinds = [
+      "Normal", "Effet", "Rituel", "Fusion", "Synchro", "Xyz", "Lien", "Pendule",
+      "Pendule / Effet", "Pendule / Normal", "Pendule / Fusion", "Pendule / Synchro",
+      "Pendule / Xyz", "Rituel / Pendule", "Jeton"
+    ];
 
-<!-- HEADER -->
-<div id="header">
-  <h1>DUELLISTE</h1>
-  <p>CONSTRUCTEUR DE DECKS YU-GI-OH!</p>
-</div>
+    const spellKinds = ["Normale", "Jeu-Rapide", "Continue", "Équipement", "Terrain", "Rituelle"];
+    const trapKinds = ["Normal", "Continu", "Contre-piège"];
+    const attributes = ["LUMIÈRE", "TÉNÈBRES", "TERRE", "EAU", "FEU", "VENT", "DIVIN"];
+    const races = [
+      "Aqua", "Bête", "Bête Ailée", "Bête-Guerrier", "Cyberse", "Démon", "Dinosaure", "Dragon",
+      "Elfe", "Feu", "Guerrier", "Insecte", "Machine", "Magicien", "Plante", "Poisson",
+      "Psychique", "Pyro", "Reptile", "Rocher", "Serpent de Mer", "Tonnerre", "Wyrm", "Zombie",
+      "Divin-Bête", "Créateur"
+    ];
+    const linkArrows = [
+      "↖ Haut-Gauche", "↑ Haut", "↗ Haut-Droite", "← Gauche",
+      "→ Droite", "↙ Bas-Gauche", "↓ Bas", "↘ Bas-Droite"
+    ];
 
-<!-- NAV -->
-<div id="nav">
-  <button class="nav-btn active" onclick="switchTab('library')" id="nav-library">
-    📚 BIBLIOTHÈQUE <span class="badge" id="badge-cards">0</span>
-  </button>
-  <button class="nav-btn" onclick="switchTab('decks')" id="nav-decks">
-    🃏 MES DECKS <span class="badge" id="badge-decks">0</span>
-  </button>
-  <button class="nav-btn" onclick="switchTab('save')" id="nav-save">
-    💾 SAUVEGARDE
-  </button>
-  <button class="nav-btn" onclick="switchTab('test')" id="nav-test">
-    ⚔ TEST DECK
-  </button>
-</div>
-
-<!-- APP -->
-<div id="app">
-
-  <!-- ══ BIBLIOTHÈQUE ═══════════════════════════════════════════════ -->
-  <div class="tab-layout active" id="tab-library">
-    <!-- Sidebar: form -->
-    <div class="sidebar" id="form-sidebar">
-      <div class="section-title" id="form-title">+ Créer une carte</div>
-
-      <!-- Drop zone -->
-      <div id="drop-zone" onclick="document.getElementById('file-input').click()"
-           ondragover="event.preventDefault();this.classList.add('drag-over')"
-           ondragleave="this.classList.remove('drag-over')"
-           ondrop="handleDrop(event)">
-        <div class="dz-icon" id="dz-icon">🖼</div>
-        <div class="dz-text">
-          <strong>Illustration</strong>
-          Cliquez ou glissez une image<br>JPG · PNG · WEBP
-        </div>
-      </div>
-      <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFileInput(event)"/>
-
-      <div class="field">
-        <label class="lbl">Nom *</label>
-        <input type="text" id="f-name" placeholder="ex: Magicien Sombre"/>
-      </div>
-
-      <div class="field">
-        <label class="lbl">Type *</label>
-        <select id="f-type" onchange="toggleMonsterFields()">
-          <option>Monstre Normal</option>
-          <option>Monstre Effet</option>
-          <option>Monstre Fusion</option>
-          <option>Monstre Synchro</option>
-          <option>Monstre Xyz</option>
-          <option>Monstre Lien</option>
-          <option>Magie</option>
-          <option>Piège</option>
-        </select>
-      </div>
-
-      <div id="monster-fields">
-        <div class="stat-row">
-          <div>
-            <label class="lbl">Attr.</label>
-            <select id="f-attr">
-              <option>TÉN</option><option>LUM</option><option>FEU</option>
-              <option>EAU</option><option>TER</option><option>VEN</option><option>DIV</option>
-            </select>
-          </div>
-          <div>
-            <label class="lbl">Niv.</label>
-            <select id="f-level">
-              <option>1</option><option>2</option><option>3</option><option>4</option>
-              <option>5</option><option>6</option><option>7</option><option>8</option>
-              <option>9</option><option>10</option><option>11</option><option>12</option>
-            </select>
-          </div>
-          <div>
-            <label class="lbl">ATK</label>
-            <input type="number" id="f-atk" value="0" min="0"/>
-          </div>
-          <div>
-            <label class="lbl">DEF</label>
-            <input type="number" id="f-def" value="0" min="0"/>
-          </div>
-          <div>
-            <label class="lbl">Race</label>
-            <select id="f-race">
-              <option>Dr</option><option>Ma</option><option>Gé</option><option>In</option>
-              <option>Py</option><option>Aq</option><option>Ro</option><option>Be</option>
-              <option>Pl</option><option>Fé</option><option>Ze</option><option>To</option>
-              <option>Di</option><option>Cy</option><option>Cr</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="field">
-        <label class="lbl">Description / Effet</label>
-        <textarea id="f-desc" placeholder="Description ou effet de la carte..."></textarea>
-      </div>
-
-      <button class="btn-gold" id="submit-btn" onclick="submitCard()">CRÉER LA CARTE</button>
-      <button class="btn-ghost" id="cancel-btn" style="width:100%;margin-top:8px;display:none" onclick="cancelEdit()">Annuler</button>
-    </div>
-
-    <!-- Main: card grid -->
-    <div class="main-area">
-      <div id="search-bar">
-        <input type="text" id="search-input" placeholder="Rechercher une carte..." oninput="renderLibrary()"/>
-        <select id="filter-type" onchange="renderLibrary()">
-          <option>Tous les types</option>
-          <option>Monstre Normal</option><option>Monstre Effet</option>
-          <option>Monstre Fusion</option><option>Monstre Synchro</option>
-          <option>Monstre Xyz</option><option>Monstre Lien</option>
-          <option>Magie</option><option>Piège</option>
-        </select>
-        <span class="count" id="card-count">0 carte(s)</span>
-      </div>
-      <div id="card-grid"></div>
-    </div>
-
-    <!-- Preview panel -->
-    <div class="preview-panel" id="preview-panel" style="display:none">
-      <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
-        <div class="section-title" style="margin-bottom:0">Aperçu</div>
-        <button onclick="closePreview()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px">✕</button>
-      </div>
-      <div id="preview-content"></div>
-      <button class="btn-gold" onclick="addToActiveDeck(currentPreviewId)">+ Ajouter au deck</button>
-    </div>
-  </div>
-
-  <!-- ══ MES DECKS ══════════════════════════════════════════════════ -->
-  <div class="tab-layout" id="tab-decks">
-    <!-- Deck list sidebar -->
-    <div class="sidebar">
-      <div class="section-title">Mes decks</div>
-      <div class="new-deck-row">
-        <input type="text" id="new-deck-name" placeholder="Nom du deck..." onkeydown="if(event.key==='Enter')createDeck()"/>
-        <button class="btn-ghost" onclick="createDeck()">+</button>
-      </div>
-      <div id="deck-list"></div>
-    </div>
-
-    <!-- Deck content -->
-    <div class="main-area" id="deck-content">
-      <div class="empty">
-        <div class="e-icon">🃏</div>
-        <div class="e-title">Sélectionne ou crée un deck</div>
-      </div>
-    </div>
-
-    <!-- Preview panel decks -->
-    <div class="preview-panel" id="preview-panel-decks" style="display:none">
-      <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
-        <div class="section-title" style="margin-bottom:0">Aperçu</div>
-        <button onclick="closePreviewDecks()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px">✕</button>
-      </div>
-      <div id="preview-content-decks"></div>
-    </div>
-  </div>
-
-  <!-- ══ SAUVEGARDE ═════════════════════════════════════════════════ -->
-  <div class="tab" id="tab-save">
-    <div class="save-page">
-      <div class="section-title">Sauvegarde & Importation</div>
-
-      <div class="save-card">
-        <h3>📤 Exporter</h3>
-        <p>Téléchargez toutes vos cartes et decks en fichier JSON pour les sauvegarder localement ou les transférer.</p>
-        <button class="btn-gold" onclick="exportData()">EXPORTER LES DONNÉES</button>
-      </div>
-
-      <div class="save-card">
-        <h3>📥 Importer</h3>
-        <p>Importez un fichier JSON précédemment exporté pour restaurer vos cartes et decks.</p>
-        <input type="file" id="import-file" accept=".json" onchange="importData(event)" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:8px 10px;font-size:13px;cursor:pointer"/>
-      </div>
-
-      <div class="save-card danger">
-        <h3>⚠ Zone de danger</h3>
-        <p>Supprime définitivement toutes les cartes et tous les decks. Cette action est irréversible.</p>
-        <button class="btn-danger" onclick="clearAll()">EFFACER TOUTES LES DONNÉES</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ TEST DECK ══════════════════════════════════════════════════ -->
-  <div class="tab" id="tab-test">
-    <div class="test-page">
-      <div class="section-title">Test de deck — main initiale</div>
-      <div style="display:flex;gap:14px;align-items:center;margin-bottom:24px;flex-wrap:wrap">
-        <select id="test-deck-select" style="width:220px">
-          <option value="">Choisir un deck...</option>
-        </select>
-        <button class="btn-gold" style="width:auto;padding:10px 26px" onclick="drawHand()">🃏 Piocher 5 cartes</button>
-        <button class="btn-ghost" onclick="drawHand()">↺ Repiocher</button>
-      </div>
-      <div id="test-hand" class="hand-row"></div>
-      <div id="test-empty" class="empty">
-        <div class="e-icon">🃏</div>
-        <div class="e-title">Sélectionne un deck et pioche</div>
-        <div class="e-sub">Simule ta main de départ</div>
-      </div>
-    </div>
-  </div>
-
-</div><!-- #app -->
-
-<script>
-// ═══════════════════════════════════════════════════════════════════
-// DATA
-// ═══════════════════════════════════════════════════════════════════
-const TYPE_COLORS = {
-  "Monstre Normal":  { bg:"#c8a84b", border:"#8b6914", text:"#1a0a00" },
-  "Monstre Effet":   { bg:"#c84b00", border:"#8b2800", text:"#fff5e6" },
-  "Monstre Fusion":  { bg:"#6b3fa0", border:"#3d1f6e", text:"#f0e6ff" },
-  "Monstre Synchro": { bg:"#ccc",    border:"#888",    text:"#111"    },
-  "Monstre Xyz":     { bg:"#1a1a1a", border:"#555",    text:"#fff"    },
-  "Monstre Lien":    { bg:"#003cb3", border:"#001f6e", text:"#e6f0ff" },
-  "Magie":           { bg:"#1a8c55", border:"#0a4d2e", text:"#e6fff4" },
-  "Piège":           { bg:"#8c1a55", border:"#4d0a2e", text:"#ffe6f0" },
-};
-const isMonster = t => t && t.startsWith("Monstre");
-
-let cards = [], decks = [], activeDeckId = null;
-let editingId = null, currentPreviewId = null, currentImage = null;
-
-// ── Persistence via IndexedDB (sans limite de taille) ───────────────
-let db = null;
-function initDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open("duelliste_db", 1);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains("store")) d.createObjectStore("store");
-    };
-    req.onsuccess = e => { db = e.target.result; resolve(); };
-    req.onerror = () => reject(req.error);
-  });
-}
-function dbSet(key, value) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("store", "readwrite");
-    tx.objectStore("store").put(value, key);
-    tx.oncomplete = resolve;
-    tx.onerror = () => reject(tx.error);
-  });
-}
-function dbGet(key) {
-  return new Promise((resolve) => {
-    const tx = db.transaction("store", "readonly");
-    const req = tx.objectStore("store").get(key);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => resolve(undefined);
-  });
-}
-function save() {
-  if (!db) return;
-  dbSet("cards", cards).catch(console.error);
-  dbSet("decks", decks).catch(console.error);
-  dbSet("active", activeDeckId).catch(console.error);
-}
-async function load() {
-  await initDB();
-  try { const v = await dbGet("cards"); if (Array.isArray(v)) cards = v; } catch {}
-  try { const v = await dbGet("decks"); if (Array.isArray(v)) decks = v; } catch {}
-  try { const v = await dbGet("active"); if (v !== undefined) activeDeckId = v; } catch {}
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// NOTIFICATION
-// ═══════════════════════════════════════════════════════════════════
-let notifTimer;
-function notify(msg, color = "#c8a84b", textColor = "#1a0a00") {
-  const el = document.getElementById("notif");
-  el.textContent = msg;
-  el.style.background = color;
-  el.style.color = textColor;
-  el.classList.add("show");
-  clearTimeout(notifTimer);
-  notifTimer = setTimeout(() => el.classList.remove("show"), 2600);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// TABS
-// ═══════════════════════════════════════════════════════════════════
-function switchTab(tab) {
-  ["library","decks","save","test"].forEach(t => {
-    const el = document.getElementById("tab-"+t);
-    if (!el) return;
-    el.classList.toggle("active", t === tab);
-  });
-  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-  document.getElementById("nav-"+tab)?.classList.add("active");
-  if (tab === "test") populateTestSelect();
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// IMAGE HANDLING
-// ═══════════════════════════════════════════════════════════════════
-function handleFileInput(e) {
-  const file = e.target.files[0];
-  if (file) readImage(file);
-}
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById("drop-zone").classList.remove("drag-over");
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith("image/")) readImage(file);
-}
-function readImage(file) {
-  const reader = new FileReader();
-  reader.onload = ev => {
-    currentImage = ev.target.result;
-    const icon = document.getElementById("dz-icon");
-    icon.innerHTML = `<img src="${currentImage}" style="width:54px;height:54px;object-fit:cover;border-radius:4px"/>`;
-  };
-  reader.readAsDataURL(file);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// FORM
-// ═══════════════════════════════════════════════════════════════════
-function toggleMonsterFields() {
-  const type = document.getElementById("f-type").value;
-  document.getElementById("monster-fields").style.display = isMonster(type) ? "" : "none";
-}
-
-function getFormData() {
-  return {
-    id: editingId || Date.now(),
-    name: document.getElementById("f-name").value.trim(),
-    type: document.getElementById("f-type").value,
-    attribute: document.getElementById("f-attr").value,
-    level: parseInt(document.getElementById("f-level").value),
-    atk: parseInt(document.getElementById("f-atk").value) || 0,
-    def: parseInt(document.getElementById("f-def").value) || 0,
-    race: document.getElementById("f-race").value,
-    description: document.getElementById("f-desc").value.trim(),
-    image: currentImage || null,
-  };
-}
-
-function fillForm(card) {
-  document.getElementById("f-name").value = card.name;
-  document.getElementById("f-type").value = card.type;
-  document.getElementById("f-attr").value = card.attribute || "TÉN";
-  document.getElementById("f-level").value = card.level || 4;
-  document.getElementById("f-atk").value = card.atk || 0;
-  document.getElementById("f-def").value = card.def || 0;
-  document.getElementById("f-race").value = card.race || "Dr";
-  document.getElementById("f-desc").value = card.description || "";
-  currentImage = card.image || null;
-  const icon = document.getElementById("dz-icon");
-  if (card.image) {
-    icon.innerHTML = `<img src="${card.image}" style="width:54px;height:54px;object-fit:cover;border-radius:4px"/>`;
-  } else {
-    icon.innerHTML = "🖼";
-  }
-  toggleMonsterFields();
-}
-
-function resetForm() {
-  document.getElementById("f-name").value = "";
-  document.getElementById("f-type").value = "Monstre Normal";
-  document.getElementById("f-attr").value = "TÉN";
-  document.getElementById("f-level").value = "4";
-  document.getElementById("f-atk").value = "0";
-  document.getElementById("f-def").value = "0";
-  document.getElementById("f-race").value = "Dr";
-  document.getElementById("f-desc").value = "";
-  currentImage = null;
-  document.getElementById("dz-icon").innerHTML = "🖼";
-  document.getElementById("file-input").value = "";
-  toggleMonsterFields();
-}
-
-function submitCard() {
-  const data = getFormData();
-  if (!data.name) { notify("⚠ Le nom est requis", "#c84b00", "#fff"); return; }
-  if (editingId) {
-    const idx = cards.findIndex(c => c.id === editingId);
-    if (idx !== -1) cards[idx] = data;
-    notify("✓ Carte modifiée");
-    cancelEdit();
-  } else {
-    data.id = Date.now();
-    cards.push(data);
-    notify("✓ Carte créée");
-    resetForm();
-  }
-  save(); updateBadges(); renderLibrary();
-}
-
-function startEdit(id) {
-  const card = cards.find(c => c.id === id);
-  if (!card) return;
-  editingId = id;
-  fillForm(card);
-  document.getElementById("form-title").textContent = "✏ Modifier la carte";
-  document.getElementById("submit-btn").textContent = "MODIFIER LA CARTE";
-  document.getElementById("cancel-btn").style.display = "";
-  switchTab("library");
-  document.getElementById("form-sidebar").scrollTop = 0;
-}
-
-function cancelEdit() {
-  editingId = null;
-  resetForm();
-  document.getElementById("form-title").textContent = "+ Créer une carte";
-  document.getElementById("submit-btn").textContent = "CRÉER LA CARTE";
-  document.getElementById("cancel-btn").style.display = "none";
-}
-
-function deleteCard(id) {
-  cards = cards.filter(c => c.id !== id);
-  decks = decks.map(d => ({ ...d, cardIds: d.cardIds.filter(cid => cid !== id) }));
-  save(); updateBadges(); renderLibrary(); renderDeckContent();
-  notify("Carte supprimée", "#555", "#ccc");
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// LIBRARY RENDER
-// ═══════════════════════════════════════════════════════════════════
-function renderLibrary() {
-  const search = document.getElementById("search-input").value.toLowerCase();
-  const filter = document.getElementById("filter-type").value;
-  const filtered = cards.filter(c => {
-    return c.name.toLowerCase().includes(search) &&
-           (filter === "Tous les types" || c.type === filter);
-  });
-  document.getElementById("card-count").textContent = filtered.length + " carte(s)";
-  const grid = document.getElementById("card-grid");
-  if (filtered.length === 0) {
-    grid.innerHTML = `<div class="empty" style="width:100%"><div class="e-icon">🃏</div><div class="e-title">Aucune carte trouvée</div><div class="e-sub">Créez votre première carte avec le formulaire à gauche</div></div>`;
-    return;
-  }
-  grid.innerHTML = filtered.map(card => `
-    <div class="card-wrap">
-      ${miniCardHTML(card, false, `showPreview(${card.id})`)}
-      <div class="card-actions">
-        <button onclick="addToActiveDeck(${card.id})">+ Deck</button>
-        <button onclick="startEdit(${card.id})">✏</button>
-        <button class="del" onclick="deleteCard(${card.id})">🗑</button>
-      </div>
-    </div>
-  `).join("");
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// CARD HTML BUILDERS
-// ═══════════════════════════════════════════════════════════════════
-function miniCardHTML(card, showRemove = false, clickFn = "") {
-  const c = TYPE_COLORS[card.type] || TYPE_COLORS["Monstre Normal"];
-  const icon = card.type === "Magie" ? "✦" : card.type === "Piège" ? "⚠" : "⚔";
-  const img = card.image
-    ? `<img class="cm-img" src="${card.image}" alt=""/>`
-    : `<div class="cm-placeholder">${icon}</div>`;
-  const remove = showRemove
-    ? `<button class="cm-remove" onclick="event.stopPropagation();removeFromDeck(${card.id})">×</button>`
-    : "";
-  const stats = isMonster(card.type) ? `<div class="cm-stats">${card.atk}/${card.def}</div>` : "";
-  return `
-    <div class="card-mini" style="background:${c.bg};border:2px solid ${c.border}" onclick="${clickFn}">
-      ${img}
-      <div class="cm-body">
-        <div class="cm-name" style="color:${c.text}">${escHtml(card.name || "Sans nom")}</div>
-        <div style="color:${c.text}">${stats}</div>
-      </div>
-      ${remove}
-    </div>`;
-}
-
-function previewCardHTML(card) {
-  const c = TYPE_COLORS[card.type] || TYPE_COLORS["Monstre Normal"];
-  const icon = card.type === "Magie" ? "✦" : card.type === "Piège" ? "⚠" : "⚔";
-  const img = card.image
-    ? `<img class="cp-img" src="${card.image}" alt=""/>`
-    : `<div class="cp-placeholder">${icon}</div>`;
-  const stats = isMonster(card.type) ? `
-    <div class="cp-stats">
-      ★ ×${card.level} &nbsp;|&nbsp; ${card.attribute} &nbsp;|&nbsp; ${card.race}<br>
-      ATK <strong>${card.atk}</strong> &nbsp;/&nbsp; DEF <strong>${card.def}</strong>
-    </div>` : "";
-  return `
-    <div class="card-preview" style="background:${c.bg};border:3px solid ${c.border};color:${c.text}">
-      <div class="cp-header">${escHtml(card.name || "Sans nom")}</div>
-      ${img}
-      <div class="cp-body">
-        <div class="cp-type">${card.type}</div>
-        ${stats}
-        <div class="cp-desc">${escHtml(card.description || "Aucune description.")}</div>
-      </div>
-    </div>`;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// PREVIEW
-// ═══════════════════════════════════════════════════════════════════
-function showPreview(id) {
-  const card = cards.find(c => c.id === id);
-  if (!card) return;
-  currentPreviewId = id;
-  document.getElementById("preview-content").innerHTML = previewCardHTML(card);
-  document.getElementById("preview-panel").style.display = "flex";
-}
-function closePreview() {
-  document.getElementById("preview-panel").style.display = "none";
-  currentPreviewId = null;
-}
-function showPreviewDecks(id) {
-  const card = cards.find(c => c.id === id);
-  if (!card) return;
-  document.getElementById("preview-content-decks").innerHTML = previewCardHTML(card);
-  document.getElementById("preview-panel-decks").style.display = "flex";
-}
-function closePreviewDecks() {
-  document.getElementById("preview-panel-decks").style.display = "none";
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// DECKS
-// ═══════════════════════════════════════════════════════════════════
-function createDeck() {
-  const name = document.getElementById("new-deck-name").value.trim();
-  if (!name) { notify("⚠ Nomme le deck", "#c84b00", "#fff"); return; }
-  const d = { id: Date.now(), name, cardIds: [] };
-  decks.push(d);
-  activeDeckId = d.id;
-  document.getElementById("new-deck-name").value = "";
-  save(); updateBadges(); renderDeckList(); renderDeckContent();
-  notify(`✓ Deck "${name}" créé`);
-}
-
-function deleteDeck(id) {
-  decks = decks.filter(d => d.id !== id);
-  if (activeDeckId === id) activeDeckId = decks.length ? decks[decks.length-1].id : null;
-  save(); updateBadges(); renderDeckList(); renderDeckContent();
-  notify("Deck supprimé", "#555", "#ccc");
-}
-
-function selectDeck(id) {
-  activeDeckId = id;
-  save(); renderDeckList(); renderDeckContent();
-}
-
-function addToActiveDeck(cardId) {
-  if (!activeDeckId) { notify("⚠ Sélectionne ou crée un deck d'abord", "#c84b00", "#fff"); return; }
-  const deck = decks.find(d => d.id === activeDeckId);
-  if (!deck) return;
-  const count = deck.cardIds.filter(id => id === cardId).length;
-  if (count >= 3) { notify("Maximum 3 exemplaires par carte"); return; }
-  if (deck.cardIds.length >= 60) { notify("Deck plein (60 cartes max)"); return; }
-  deck.cardIds.push(cardId);
-  save(); renderDeckContent(); renderDeckList();
-  notify("+ Carte ajoutée au deck");
-}
-
-function removeFromDeck(cardId) {
-  const deck = decks.find(d => d.id === activeDeckId);
-  if (!deck) return;
-  const idx = deck.cardIds.indexOf(cardId);
-  if (idx !== -1) deck.cardIds.splice(idx, 1);
-  save(); renderDeckContent(); renderDeckList();
-}
-
-function renderDeckList() {
-  const el = document.getElementById("deck-list");
-  if (decks.length === 0) {
-    el.innerHTML = `<div style="color:var(--text-faint);font-size:12px;text-align:center;margin-top:20px">Aucun deck créé</div>`;
-    return;
-  }
-  el.innerHTML = decks.map(d => `
-    <div class="deck-item ${d.id === activeDeckId ? 'active' : ''}" onclick="selectDeck(${d.id})">
-      <div>
-        <div class="deck-name">${escHtml(d.name)}</div>
-        <div class="deck-count">${d.cardIds.length} carte${d.cardIds.length!==1?"s":""}</div>
-      </div>
-      <button class="deck-del" onclick="event.stopPropagation();deleteDeck(${d.id})">🗑</button>
-    </div>`).join("");
-}
-
-function renderDeckContent() {
-  const el = document.getElementById("deck-content");
-  const deck = decks.find(d => d.id === activeDeckId);
-  if (!deck) {
-    el.innerHTML = `<div class="empty"><div class="e-icon">🃏</div><div class="e-title">Sélectionne ou crée un deck</div></div>`;
-    return;
-  }
-  // Unique card IDs with counts
-  const countMap = {};
-  deck.cardIds.forEach(id => countMap[id] = (countMap[id]||0)+1);
-  const uniqueIds = [...new Set(deck.cardIds)];
-  const pct = Math.min(100, Math.round((deck.cardIds.length/60)*100));
-
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-      <div>
-        <div style="font-family:'Cinzel',serif;font-size:18px;color:var(--gold)">${escHtml(deck.name)}</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-top:2px">${deck.cardIds.length}/60 cartes</div>
-      </div>
-      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-    </div>
-    ${uniqueIds.length === 0
-      ? `<div class="empty"><div class="e-icon">✦</div><div class="e-title">Ce deck est vide</div><div class="e-sub">Ajoute des cartes depuis la Bibliothèque</div></div>`
-      : `<div id="card-grid" style="display:flex;flex-wrap:wrap;gap:14px">
-          ${uniqueIds.map(id => {
-            const card = cards.find(c => c.id === id);
-            if (!card) return "";
-            const cnt = countMap[id];
-            const c = TYPE_COLORS[card.type] || TYPE_COLORS["Monstre Normal"];
-            const icon = card.type === "Magie" ? "✦" : card.type === "Piège" ? "⚠" : "⚔";
-            const img = card.image ? `<img class="cm-img" src="${card.image}" alt=""/>` : `<div class="cm-placeholder">${icon}</div>`;
-            const stats = isMonster(card.type) ? `<div class="cm-stats" style="color:${c.text}">${card.atk}/${card.def}</div>` : "";
-            return `
-              <div class="card-wrap">
-                <div class="card-mini" style="background:${c.bg};border:2px solid ${c.border}" onclick="showPreviewDecks(${id})">
-                  ${img}
-                  <div class="cm-body">
-                    <div class="cm-name" style="color:${c.text}">${escHtml(card.name||"Sans nom")}</div>
-                    ${stats}
-                  </div>
-                  ${cnt>1?`<div class="cm-count">×${cnt}</div>`:""}
-                  <button class="cm-remove" onclick="event.stopPropagation();removeFromDeck(${id})">×</button>
-                </div>
-                <div class="card-actions">
-                  <button onclick="addToActiveDeck(${id})">+1</button>
-                  <button class="del" onclick="removeFromDeck(${id})">−1</button>
-                </div>
-              </div>`;
-          }).join("")}
-        </div>`
-    }`;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SAVE / IMPORT / EXPORT
-// ═══════════════════════════════════════════════════════════════════
-function exportData() {
-  const data = JSON.stringify({ cards, decks }, null, 2);
-  const blob = new Blob([data], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "duelliste-backup.json"; a.click();
-  URL.revokeObjectURL(url);
-  notify("✓ Backup téléchargé");
-}
-
-function importData(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  e.target.value = "";
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      const bytes = new Uint8Array(ev.target.result);
-      const text = new TextDecoder("utf-8").decode(bytes);
-      const data = JSON.parse(text);
-      if (!data || typeof data !== "object") throw new Error("invalid");
-
-      // FORMAT A : notre propre export { cards:[...], decks:[...] }
-      if (Array.isArray(data.cards) && (!data.cards[0] || data.cards[0].type && data.cards[0].type.indexOf(" ") > -1)) {
-        if (Array.isArray(data.cards)) cards = data.cards;
-        if (Array.isArray(data.decks)) decks = data.decks;
-
-      // FORMAT B : ancien logiciel { library:[...], cardImages:{}, decks:[{main:[{cardId,qty}]}] }
-      } else if (Array.isArray(data.library)) {
-        const imgs = data.cardImages || {};
-        const typeMap = function(t) {
-          if (!t) return "Monstre Normal";
-          t = t.toLowerCase();
-          if (t === "monstre-effet" || t === "monstre_effet") return "Monstre Effet";
-          if (t === "fusion")   return "Monstre Fusion";
-          if (t === "synchro")  return "Monstre Synchro";
-          if (t === "xyz")      return "Monstre Xyz";
-          if (t === "lien" || t === "link") return "Monstre Lien";
-          if (t.startsWith("magie") || t.startsWith("magic") || t === "rituel") return "Magie";
-          if (t.startsWith("piege") || t.startsWith("piège") || t.startsWith("trap")) return "Piège";
-          if (t === "monstre" || t === "monstre-normal" || t === "normal") return "Monstre Normal";
-          return "Monstre Normal";
-        };
-        const attrMap = function(a) {
-          if (!a) return "TÉN";
-          const m = {"TÉNÈBRES":"TÉN","TENEBRES":"TÉN","TÉNEBRES":"TÉN","LUMIÈRE":"LUM","LUMIERE":"LUM",
-                     "FEU":"FEU","EAU":"EAU","TERRE":"TER","VENT":"VEN","DIVIN":"DIV",
-                     "DARK":"TÉN","LIGHT":"LUM","FIRE":"FEU","WATER":"EAU","EARTH":"TER","WIND":"VEN","DIVINE":"DIV"};
-          return m[a.toUpperCase()] || a.slice(0,3).toUpperCase() || "TÉN";
-        };
-        cards = data.library.map(function(c) {
-          return {
-            id: c.id,
-            name: c.name || "Sans nom",
-            type: typeMap(c.type),
-            attribute: attrMap(c.attribute),
-            level: c.level || 0,
-            atk: c.atk != null ? c.atk : 0,
-            def: c.def != null ? c.def : 0,
-            race: c.race ? c.race.slice(0,3) : "Dr",
-            description: c.desc || c.description || "",
-            image: imgs[c.id] || null
-          };
-        });
-        decks = (data.decks || []).map(function(d) {
-          var allCards = (d.main||[]).concat(d.extra||[]).concat(d.side||[]);
-          var cardIds = [];
-          allCards.forEach(function(entry) {
-            var qty = entry.qty || 1;
-            for (var i = 0; i < qty; i++) cardIds.push(entry.cardId);
-          });
-          return { id: d.id || Date.now(), name: d.name || "Deck importé", cardIds: cardIds };
-        });
-
-      } else {
-        throw new Error("Format inconnu");
-      }
-
-      if (activeDeckId && !decks.find(function(d){ return d.id === activeDeckId; })) activeDeckId = null;
-      if (!activeDeckId && decks.length) activeDeckId = decks[0].id;
-      save(); updateBadges(); renderLibrary(); renderDeckList(); renderDeckContent();
-      notify("✓ Import réussi — " + cards.length + " cartes, " + decks.length + " deck(s)");
-    } catch(err) {
-      console.error("Import error:", err);
-      notify("⚠ Fichier invalide ou corrompu", "#c84b00", "#fff");
+    function uid() {
+      return Math.random().toString(36).slice(2) + Date.now().toString(36);
     }
-  };
-  reader.onerror = function() { notify("⚠ Erreur de lecture du fichier", "#c84b00", "#fff"); };
-  reader.readAsArrayBuffer(file);
-}
 
-function clearAll() {
-  if (!confirm("Effacer TOUTES les données ? Cette action est irréversible.")) return;
-  cards = []; decks = []; activeDeckId = null;
-  save(); updateBadges(); renderLibrary(); renderDeckList(); renderDeckContent();
-  notify("Données effacées", "#555", "#ccc");
-}
+    const initialCards = [
+      {
+        id: uid(),
+        name: "Dragon Démo",
+        cardType: "Monstre",
+        monsterKind: "Effet",
+        level: 4,
+        attribute: "LUMIÈRE",
+        race: "Dragon",
+        atk: 1800,
+        def: 1200,
+        description: "Quand cette carte est invoquée : piochez 1 carte.",
+        linkArrows: []
+      },
+      {
+        id: uid(),
+        name: "Tourbillon Démo",
+        cardType: "Magie",
+        spellKind: "Jeu-Rapide",
+        description: "Ciblez 1 carte sur le Terrain ; renvoyez-la à la main."
+      },
+      {
+        id: uid(),
+        name: "Gardien Réseau",
+        cardType: "Monstre",
+        monsterKind: "Lien",
+        linkRating: 2,
+        attribute: "TERRE",
+        race: "Cyberse",
+        atk: 1400,
+        linkArrows: ["↓ Bas", "→ Droite"],
+        description: "Si cette carte est Invoquée par Lien : ajoutez 1 monstre Cyberse depuis votre Deck à votre main."
+      }
+    ];
 
-// ═══════════════════════════════════════════════════════════════════
-// TEST DECK
-// ═══════════════════════════════════════════════════════════════════
-function populateTestSelect() {
-  const sel = document.getElementById("test-deck-select");
-  const current = sel.value;
-  sel.innerHTML = `<option value="">Choisir un deck...</option>` +
-    decks.map(d => `<option value="${d.id}">${escHtml(d.name)} (${d.cardIds.length} cartes)</option>`).join("");
-  if (current) sel.value = current;
-}
+    const emptyCard = {
+      name: "",
+      cardType: "Monstre",
+      monsterKind: "Effet",
+      spellKind: "Normale",
+      trapKind: "Normal",
+      level: 4,
+      rank: 4,
+      linkRating: 1,
+      pendulumScaleLeft: 1,
+      pendulumScaleRight: 1,
+      attribute: "LUMIÈRE",
+      race: "Dragon",
+      atk: 0,
+      def: 0,
+      linkArrows: [],
+      imageUrl: "",
+      description: ""
+    };
 
-function drawHand() {
-  const deckId = parseInt(document.getElementById("test-deck-select").value);
-  const deck = decks.find(d => d.id === deckId);
-  if (!deck || deck.cardIds.length < 5) {
-    notify("⚠ Le deck doit avoir au moins 5 cartes", "#c84b00", "#fff");
-    return;
-  }
-  const shuffled = [...deck.cardIds].sort(() => Math.random() - 0.5);
-  const hand = shuffled.slice(0, 5).map(id => cards.find(c => c.id === id)).filter(Boolean);
-  document.getElementById("test-empty").style.display = "none";
-  document.getElementById("test-hand").innerHTML = hand.map(c => previewCardHTML(c)).join("");
-}
+    function countCardKinds(deck) {
+      return {
+        monsters: deck.filter(c => c.cardType === "Monstre").length,
+        spells: deck.filter(c => c.cardType === "Magie").length,
+        traps: deck.filter(c => c.cardType === "Piège").length,
+      };
+    }
 
-// ═══════════════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════════════
-function updateBadges() {
-  document.getElementById("badge-cards").textContent = cards.length;
-  document.getElementById("badge-decks").textContent = decks.length;
-}
+    function draw(deck, count = 1) {
+      const copy = [...deck];
+      const drawn = copy.splice(0, count);
+      return { drawn, remaining: copy };
+    }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
+    function aiChoosePlay(hand) {
+      const monster = hand.find(c => c.cardType === "Monstre");
+      if (monster) return { action: "summon", card: monster, text: `L'IA invoque ${monster.name}.` };
+      const spell = hand.find(c => c.cardType === "Magie");
+      if (spell) return { action: "spell", card: spell, text: `L'IA active ${spell.name}.` };
+      return { action: "pass", text: "L'IA passe son tour." };
+    }
 
-// ═══════════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════════
-(async function() {
-  await load();
-  toggleMonsterFields();
-  updateBadges();
-  renderLibrary();
-  renderDeckList();
-  renderDeckContent();
-})();
-</script>
+    function App() {
+      const [cards, setCards] = React.useState(initialCards);
+      const [deck, setDeck] = React.useState([]);
+      const [form, setForm] = React.useState(emptyCard);
+      const [tab, setTab] = React.useState("builder");
+      const [duel, setDuel] = React.useState(null);
+      const fileInputRef = React.useRef(null);
+      const pasteZoneRef = React.useRef(null);
+
+      const stats = React.useMemo(() => countCardKinds(deck), [deck]);
+
+      const update = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+
+      const fileToDataUrl = (file) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setForm(prev => ({ ...prev, imageUrl: String(reader.result || "") }));
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const onImageFileChange = (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        fileToDataUrl(file);
+      };
+
+      const onPasteImage = (event) => {
+        const items = event.clipboardData && event.clipboardData.items;
+        if (!items) return;
+        for (const item of items) {
+          if (item.type && item.type.startsWith("image/")) {
+            const file = item.getAsFile();
+            if (file) {
+              fileToDataUrl(file);
+              event.preventDefault();
+              return;
+            }
+          }
+        }
+      };
+
+      const onDropImage = (event) => {
+        event.preventDefault();
+        const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+        if (file && file.type.startsWith("image/")) {
+          fileToDataUrl(file);
+        }
+      };
+
+      const onDragOverImage = (event) => {
+        event.preventDefault();
+      };
+
+      const toggleArrow = (arrow) => {
+        setForm(prev => ({
+          ...prev,
+          linkArrows: prev.linkArrows.includes(arrow)
+            ? prev.linkArrows.filter(a => a !== arrow)
+            : [...prev.linkArrows, arrow]
+        }));
+      };
+
+      const addCard = () => {
+        if (!form.name.trim()) return;
+        setCards(prev => [...prev, { ...form, id: uid() }]);
+        setForm({ ...emptyCard });
+      };
+
+      const addToDeck = (card) => setDeck(prev => [...prev, card]);
+      const removeFromDeck = (index) => setDeck(prev => prev.filter((_, i) => i !== index));
+
+      const startDuel = () => {
+        const playerDeck = [...deck];
+        const aiDeck = [...deck].reverse();
+        const playerStart = draw(playerDeck, 5);
+        const aiStart = draw(aiDeck, 5);
+        setDuel({
+          turn: 1,
+          phase: "Main Phase 1",
+          log: ["Le duel commence.", "Vous piochez 5 cartes.", "L'IA pioche 5 cartes."],
+          playerLP: 8000,
+          aiLP: 8000,
+          playerDeck: playerStart.remaining,
+          aiDeck: aiStart.remaining,
+          playerHand: playerStart.drawn,
+          aiHand: aiStart.drawn,
+          playerField: [],
+          aiField: []
+        });
+        setTab("duel");
+      };
+
+      const nextAITurn = () => {
+        if (!duel) return;
+        const drawRes = draw(duel.aiDeck, 1);
+        const aiHand = [...duel.aiHand, ...drawRes.drawn];
+        const play = aiChoosePlay(aiHand);
+
+        let newAiHand = aiHand;
+        let newAiField = duel.aiField;
+
+        if (play.card) {
+          newAiHand = aiHand.filter(c => c.id !== play.card.id);
+          if (play.action === "summon") newAiField = [...duel.aiField, play.card];
+        }
+
+        setDuel({
+          ...duel,
+          turn: duel.turn + 1,
+          aiDeck: drawRes.remaining,
+          aiHand: newAiHand,
+          aiField: newAiField,
+          log: [
+            ...duel.log,
+            `Tour ${duel.turn + 1} — IA`,
+            drawRes.drawn[0] ? "L'IA pioche 1 carte." : "L'IA ne peut pas piocher.",
+            play.text
+          ]
+        });
+      };
+
+      return (
+        <div className="container">
+          <div className="header">
+            <h1 className="title">Yu-Gi-Oh! Deck Lab</h1>
+            <p className="subtitle">Prototype MVP : création de cartes, composition de deck et duel de test contre une IA basique.</p>
+          </div>
+
+          <div className="tabs">
+            <button className={tab === "builder" ? "tab active" : "tab"} onClick={() => setTab("builder")}>Création</button>
+            <button className={tab === "deck" ? "tab active" : "tab"} onClick={() => setTab("deck")}>Deck</button>
+            <button className={tab === "duel" ? "tab active" : "tab"} onClick={() => setTab("duel")}>Test IA</button>
+          </div>
+
+          {tab === "builder" && (
+            <div className="grid grid-2">
+              <div className="card">
+                <h2>Éditeur de carte</h2>
+
+                <div className="field">
+                  <label>Nom</label>
+                  <input value={form.name} onChange={e => update("name", e.target.value)} placeholder="Ex. Dragon Éclipse" />
+                </div>
+
+                <div className="inline-grid">
+                  <div className="field">
+                    <label>Type principal</label>
+                    <select value={form.cardType} onChange={e => update("cardType", e.target.value)}>
+                      <option>Monstre</option>
+                      <option>Magie</option>
+                      <option>Piège</option>
+                    </select>
+                  </div>
+
+                  {form.cardType === "Monstre" && (
+                    <div className="field">
+                      <label>Sous-type monstre</label>
+                      <select value={form.monsterKind} onChange={e => update("monsterKind", e.target.value)}>
+                        {monsterKinds.map(kind => <option key={kind}>{kind}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  {form.cardType === "Magie" && (
+                    <div className="field">
+                      <label>Sous-type magie</label>
+                      <select value={form.spellKind} onChange={e => update("spellKind", e.target.value)}>
+                        {spellKinds.map(kind => <option key={kind}>{kind}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  {form.cardType === "Piège" && (
+                    <div className="field">
+                      <label>Sous-type piège</label>
+                      <select value={form.trapKind} onChange={e => update("trapKind", e.target.value)}>
+                        {trapKinds.map(kind => <option key={kind}>{kind}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {form.cardType === "Monstre" && (
+                  <>
+                    <div className="inline-grid">
+                      <div className="field">
+                        <label>Attribut</label>
+                        <select value={form.attribute} onChange={e => update("attribute", e.target.value)}>
+                          {attributes.map(item => <option key={item}>{item}</option>)}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>Race</label>
+                        <select value={form.race} onChange={e => update("race", e.target.value)}>
+                          {races.map(item => <option key={item}>{item}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="inline-grid">
+                      {form.monsterKind.includes("Xyz") ? (
+                        <div className="field">
+                          <label>Rang</label>
+                          <input type="number" value={form.rank} onChange={e => update("rank", Number(e.target.value))} />
+                        </div>
+                      ) : form.monsterKind.includes("Lien") ? (
+                        <div className="field">
+                          <label>Classification Lien</label>
+                          <input type="number" value={form.linkRating} onChange={e => update("linkRating", Number(e.target.value))} />
+                        </div>
+                      ) : (
+                        <div className="field">
+                          <label>Niveau</label>
+                          <input type="number" value={form.level} onChange={e => update("level", Number(e.target.value))} />
+                        </div>
+                      )}
+
+                      <div className="field">
+                        <label>ATK</label>
+                        <input type="number" value={form.atk} onChange={e => update("atk", Number(e.target.value))} />
+                      </div>
+                    </div>
+
+                    {!form.monsterKind.includes("Lien") && (
+                      <div className="field">
+                        <label>DEF</label>
+                        <input type="number" value={form.def} onChange={e => update("def", Number(e.target.value))} />
+                      </div>
+                    )}
+
+                    {form.monsterKind.includes("Pendule") && (
+                      <div className="inline-grid">
+                        <div className="field">
+                          <label>Échelle Pendule gauche</label>
+                          <input type="number" value={form.pendulumScaleLeft} onChange={e => update("pendulumScaleLeft", Number(e.target.value))} />
+                        </div>
+                        <div className="field">
+                          <label>Échelle Pendule droite</label>
+                          <input type="number" value={form.pendulumScaleRight} onChange={e => update("pendulumScaleRight", Number(e.target.value))} />
+                        </div>
+                      </div>
+                    )}
+
+                    {form.monsterKind.includes("Lien") && (
+                      <div className="field">
+                        <label>Flèches de Lien</label>
+                        <div className="arrow-grid">
+                          {linkArrows.map(arrow => (
+                            <button
+                              key={arrow}
+                              className={form.linkArrows.includes(arrow) ? "arrow-btn active" : "arrow-btn"}
+                              onClick={() => toggleArrow(arrow)}
+                              type="button"
+                            >
+                              {arrow}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <div className="field">
+                  <label>Image de la carte</label>
+                  <input
+                    value={form.imageUrl}
+                    onChange={e => update("imageUrl", e.target.value)}
+                    placeholder="Colle l'URL d'une image, une capture, ou dépose une image ici"
+                  />
+                </div>
+
+                <div
+                  ref={pasteZoneRef}
+                  onPaste={onPasteImage}
+                  onDrop={onDropImage}
+                  onDragOver={onDragOverImage}
+                  tabIndex="0"
+                  style={{
+                    border:'2px dashed #cbd5e1',
+                    borderRadius:'14px',
+                    padding:'16px',
+                    marginBottom:'14px',
+                    background:'#f8fafc',
+                    color:'#475569',
+                    outline:'none'
+                  }}
+                >
+                  <strong>Ajout direct d'image</strong>
+                  <div style={{marginTop:'8px', fontSize:'14px', lineHeight:'1.5'}}>
+                    Colle une image avec <strong>Ctrl+V</strong> ou <strong>Cmd+V</strong>,
+                    ou glisse-dépose une image dans cette zone.
+                  </div>
+                </div>
+
+                <div className="button-row" style={{marginBottom:'14px'}}>
+                  <button className="secondary" type="button" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
+                    Importer depuis un fichier
+                  </button>
+                  {form.imageUrl && (
+                    <button className="secondary" type="button" onClick={() => update("imageUrl", "")}>
+                      Supprimer l'image
+                    </button>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{display:'none'}}
+                    onChange={onImageFileChange}
+                  />
+                </div>
+
+                <div className="field">
+                  <label>Texte / Effet</label>
+                  <textarea value={form.description} onChange={e => update("description", e.target.value)} placeholder="Texte de règle, effet ou description..." />
+                </div>
+
+                <div className="button-row">
+                  <button className="primary" onClick={addCard}>Ajouter à la bibliothèque</button>
+                  <button className="secondary" onClick={() => setForm({ ...emptyCard })}>Réinitialiser</button>
+                </div>
+              </div>
+
+              <div className="card">
+                <h2>Aperçu rapide</h2>
+                <div className="preview-box">
+                  {form.imageUrl ? (
+                    <img
+                      src={form.imageUrl}
+                      alt={form.name || 'Aperçu de carte'}
+                      style={{width:'100%', maxHeight:'260px', objectFit:'cover', borderRadius:'12px', marginBottom:'14px', border:'1px solid #e5e7eb'}}
+                    />
+                  ) : (
+                    <div style={{width:'100%', height:'220px', borderRadius:'12px', marginBottom:'14px', border:'1px dashed #d1d5db', display:'flex', alignItems:'center', justifyContent:'center', color:'#6b7280', background:'#f9fafb'}}>
+                      Aucune image
+                    </div>
+                  )}
+                  <div style={{display:'flex', justifyContent:'space-between', gap:'10px', alignItems:'center'}}>
+                    <strong style={{fontSize:'20px'}}>{form.name || 'Nouvelle carte'}</strong>
+                    <span className="badge">{form.cardType}</span>
+                  </div>
+                  <p className="muted">
+                    {form.cardType === 'Monstre'
+                      ? `${form.monsterKind} • ${form.attribute} • ${form.race}`
+                      : form.cardType === 'Magie'
+                        ? `Magie ${form.spellKind}`
+                        : `Piège ${form.trapKind}`}
+                  </p>
+                  {form.cardType === 'Monstre' && (
+                    <div>
+                      {!form.monsterKind.includes('Lien') && !form.monsterKind.includes('Xyz') && <p>Niveau : {form.level}</p>}
+                      {form.monsterKind.includes('Xyz') && <p>Rang : {form.rank}</p>}
+                      {form.monsterKind.includes('Lien') && <p>Lien : {form.linkRating}</p>}
+                      {form.monsterKind.includes('Pendule') && <p>Échelles : {form.pendulumScaleLeft} / {form.pendulumScaleRight}</p>}
+                      {form.monsterKind.includes('Lien') && <p>Flèches : {form.linkArrows.length ? form.linkArrows.join(', ') : 'Aucune'}</p>}
+                      <p>ATK : {form.atk}</p>
+                      {!form.monsterKind.includes('Lien') && <p>DEF : {form.def}</p>}
+                    </div>
+                  )}
+                  <p>{form.description || 'Aucun texte pour le moment.'}</p>
+                </div>
+                <p className="muted">Bibliothèque disponible : {cards.length} carte(s).</p>
+              </div>
+            </div>
+          )}
+
+          {tab === "deck" && (
+            <div className="grid grid-deck">
+              <div className="card">
+                <h2>Bibliothèque</h2>
+                <div className="list">
+                  {cards.map(card => (
+                    <div className="list-item" key={card.id}>
+                      <div style={{display:'flex', gap:'12px', alignItems:'flex-start'}}>
+                        {card.imageUrl ? (
+                          <img src={card.imageUrl} alt={card.name} style={{width:'72px', height:'96px', objectFit:'cover', borderRadius:'10px', border:'1px solid #e5e7eb'}} />
+                        ) : (
+                          <div style={{width:'72px', height:'96px', borderRadius:'10px', border:'1px dashed #d1d5db', display:'flex', alignItems:'center', justifyContent:'center', color:'#6b7280', background:'#f9fafb', fontSize:'12px'}}>
+                            Sans image
+                          </div>
+                        )}
+                        <div>
+                          <div><strong>{card.name}</strong></div>
+                          <div className="muted">
+                            {card.cardType === 'Monstre'
+                              ? `${card.cardType} • ${card.monsterKind}`
+                              : card.cardType === 'Magie'
+                                ? `${card.cardType} • ${card.spellKind}`
+                                : `${card.cardType} • ${card.trapKind}`}
+                          </div>
+                        </div>
+                      </div>
+                      <button className="primary" onClick={() => addToDeck(card)}>Ajouter</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="card">
+                <h2>Deck courant</h2>
+                <div className="stats">
+                  <div className="stat-box"><div className="muted">Total</div><div className="stat-number">{deck.length}</div></div>
+                  <div className="stat-box"><div className="muted">Monstres</div><div className="stat-number">{stats.monsters}</div></div>
+                  <div className="stat-box"><div className="muted">Magies</div><div className="stat-number">{stats.spells}</div></div>
+                  <div className="stat-box"><div className="muted">Pièges</div><div className="stat-number">{stats.traps}</div></div>
+                </div>
+
+                <div className="button-row" style={{margin:'16px 0'}}>
+                  <button className="primary" onClick={startDuel} disabled={deck.length < 5}>Lancer un test IA</button>
+                  <button className="secondary" onClick={() => setDeck([])}>Vider le deck</button>
+                </div>
+
+                <div className="list" style={{maxHeight:'380px'}}>
+                  {deck.map((card, index) => (
+                    <div className="list-item" key={card.id + '-' + index}>
+                      <div style={{display:'flex', gap:'12px', alignItems:'flex-start'}}>
+                        {card.imageUrl ? (
+                          <img src={card.imageUrl} alt={card.name} style={{width:'72px', height:'96px', objectFit:'cover', borderRadius:'10px', border:'1px solid #e5e7eb'}} />
+                        ) : (
+                          <div style={{width:'72px', height:'96px', borderRadius:'10px', border:'1px dashed #d1d5db', display:'flex', alignItems:'center', justifyContent:'center', color:'#6b7280', background:'#f9fafb', fontSize:'12px'}}>
+                            Sans image
+                          </div>
+                        )}
+                        <div>
+                          <div><strong>{card.name}</strong></div>
+                          <div className="muted">{card.cardType}</div>
+                        </div>
+                      </div>
+                      <button className="secondary" onClick={() => removeFromDeck(index)}>Retirer</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === "duel" && (
+            <div className="grid grid-duel">
+              <div className="card">
+                <h2>Duel de test</h2>
+                {!duel ? (
+                  <div className="duel-box muted">Ajoute au moins 5 cartes dans ton deck, puis lance un duel de test depuis l'onglet Deck.</div>
+                ) : (
+                  <>
+                    <div className="inline-grid">
+                      <div className="stat-box"><div className="muted">Vos LP</div><div className="stat-number">{duel.playerLP}</div></div>
+                      <div className="stat-box"><div className="muted">LP IA</div><div className="stat-number">{duel.aiLP}</div></div>
+                    </div>
+                    <div className="duel-box" style={{margin:'16px 0'}}>
+                      <div><strong>Tour {duel.turn}</strong></div>
+                      <div className="muted">Phase : {duel.phase}</div>
+                      <div className="muted" style={{marginTop:'10px'}}>Main : {duel.playerHand.map(c => c.name).join(', ') || 'Aucune'}</div>
+                      <div className="muted" style={{marginTop:'10px'}}>Terrain IA : {duel.aiField.map(c => c.name).join(', ') || 'Vide'}</div>
+                    </div>
+                    <div className="button-row">
+                      <button className="primary" onClick={nextAITurn}>Tour IA suivant</button>
+                      <button className="secondary" onClick={startDuel}>Recommencer</button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="card">
+                <h2>Journal du duel</h2>
+                <div className="log-list">
+                  {duel && duel.log.length ? duel.log.map((entry, index) => (
+                    <div className="log-item" key={index}>{entry}</div>
+                  )) : <div className="muted">Aucun duel en cours.</div>}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>
