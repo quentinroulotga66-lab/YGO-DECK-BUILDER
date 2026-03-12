@@ -1,693 +1,973 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yu-Gi-Oh! Deck Lab</title>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f3f4f6;
-      color: #111827;
-    }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-    .header, .card {
-      background: white;
-      border-radius: 18px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-      border: 1px solid #e5e7eb;
-    }
-    .header { padding: 24px; margin-bottom: 24px; }
-    .title { font-size: 32px; font-weight: 700; margin: 0 0 8px; }
-    .subtitle { color: #4b5563; margin: 0; }
-    .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
-    .tab {
-      border: 1px solid #d1d5db;
-      background: white;
-      padding: 12px 18px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .tab.active { background: #111827; color: white; }
-    .grid { display: grid; gap: 24px; }
-    .grid-2 { grid-template-columns: 1.2fr 0.8fr; }
-    .grid-deck { grid-template-columns: 0.95fr 1.05fr; }
-    .grid-duel { grid-template-columns: 0.9fr 1.1fr; }
-    .card { padding: 20px; }
-    .card h2 { margin-top: 0; font-size: 22px; }
-    .field { margin-bottom: 14px; }
-    .field label {
-      display: block;
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .field input, .field select, .field textarea {
-      width: 100%;
-      border: 1px solid #d1d5db;
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 14px;
-      background: white;
-    }
-    .field textarea { min-height: 120px; resize: vertical; }
-    .inline-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
-    button.primary, button.secondary, .arrow-btn {
-      border: none;
-      border-radius: 12px;
-      padding: 10px 14px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    button.primary { background: #111827; color: white; }
-    button.secondary { background: white; color: #111827; border: 1px solid #d1d5db; }
-    .arrow-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .arrow-btn { background: white; border: 1px solid #d1d5db; }
-    .arrow-btn.active { background: #111827; color: white; }
-    .preview-box, .list-item, .stat-box, .log-item {
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      background: #fff;
-    }
-    .preview-box { padding: 16px; }
-    .muted { color: #6b7280; }
-    .list { display: flex; flex-direction: column; gap: 10px; max-height: 520px; overflow: auto; }
-    .list-item { padding: 14px; display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-    .stat-box { padding: 14px; }
-    .stat-number { font-size: 26px; font-weight: 700; }
-    .duel-box { padding: 14px; border: 1px solid #e5e7eb; border-radius: 14px; }
-    .log-list { display: flex; flex-direction: column; gap: 10px; max-height: 520px; overflow: auto; }
-    .log-item { padding: 12px 14px; }
-    .badge {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      background: #e5e7eb;
-      font-weight: 700;
-    }
-    @media (max-width: 900px) {
-      .grid-2, .grid-deck, .grid-duel, .inline-grid, .stats { grid-template-columns: 1fr; }
-      .arrow-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚜ YGO Deck Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --gold:#f0c040;--gold2:#c89010;--dark:#07040f;--dark2:#0d0820;
+  --blue:#1a3a6a;--red:#6a1a2a;--green:#1a4a2a;--purple:#3a1a5a;
+  --card-normal:#c8a84b;--card-effect:#d4774a;--card-fusion:#9c5fa4;
+  --card-ritual:#5a7db5;--card-synchro:#d0d0d0;--card-xyz:#1a1a2a;
+  --card-pendulum:#3a8a5a;--card-link:#2a5a8a;--card-token:#7a7a8a;
+  --card-spell:#1a6a4a;--card-trap:#7a1a5a;
+}
+html,body{height:100%;overflow:hidden;background:var(--dark);}
+body{font-family:'Crimson Text',serif;color:#e8dfc0;cursor:default;}
+
+/* BACKGROUND */
+#bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 20% 0%,#1a0a3a,transparent 60%),radial-gradient(ellipse at 80% 100%,#0a1a3a,transparent 60%),#07040f;}
+#bg::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(255,200,50,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+
+/* LAYOUT */
+#app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column;}
+
+/* HEADER */
+header{
+  background:linear-gradient(90deg,rgba(7,4,15,0.95),rgba(13,8,32,0.9));
+  border-bottom:1px solid rgba(240,192,64,0.3);
+  padding:10px 20px;display:flex;align-items:center;gap:16px;
+  backdrop-filter:blur(8px);flex-shrink:0;
+  box-shadow:0 2px 20px rgba(0,0,0,0.5);
+}
+.logo{font-family:'Cinzel',serif;font-size:18px;font-weight:900;letter-spacing:2px;
+  background:linear-gradient(90deg,#f0c040,#c89010,#f0c040);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.nav-btn{
+  font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:1px;
+  padding:6px 16px;border-radius:3px;cursor:pointer;border:1px solid rgba(240,192,64,0.3);
+  background:transparent;color:rgba(240,192,64,0.5);transition:all 0.2s;
+}
+.nav-btn:hover,.nav-btn.active{background:rgba(240,192,64,0.12);color:#f0c040;border-color:rgba(240,192,64,0.6);}
+
+/* VIEWS */
+.view{display:none;flex:1;overflow:hidden;}
+.view.active{display:flex;}
+
+/* ── HOME ── */
+#view-home{flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:24px;overflow-y:auto;}
+.home-title{font-family:'Cinzel',serif;font-size:48px;font-weight:900;letter-spacing:4px;text-align:center;
+  background:linear-gradient(135deg,#f0c040,#c89010,#f0c040 70%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:none;line-height:1.1;}
+.home-subtitle{color:rgba(232,223,192,0.5);font-size:16px;font-style:italic;text-align:center;}
+.home-cards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;}
+.home-card{
+  width:190px;padding:24px 20px;border-radius:8px;cursor:pointer;text-align:center;
+  background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02));
+  border:1px solid rgba(240,192,64,0.2);transition:all 0.3s;
+  box-shadow:0 4px 24px rgba(0,0,0,0.4);
+}
+.home-card:hover{transform:translateY(-6px);border-color:rgba(240,192,64,0.5);box-shadow:0 12px 40px rgba(240,192,64,0.1);}
+.home-card-icon{font-size:38px;margin-bottom:12px;}
+.home-card-title{font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:#f0c040;margin-bottom:6px;letter-spacing:1px;}
+.home-card-desc{font-size:12px;color:rgba(232,223,192,0.45);line-height:1.5;}
+.stats-bar{display:flex;gap:28px;padding:16px 32px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.08);}
+.stat{text-align:center;}
+.stat-num{font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:#f0c040;}
+.stat-label{font-size:11px;color:rgba(232,223,192,0.4);margin-top:2px;}
+.stat-sep{width:1px;background:rgba(255,255,255,0.1);}
+
+/* ── BUILDER ── */
+#view-builder{flex-direction:row;}
+
+/* Library panel */
+#library{
+  width:300px;flex-shrink:0;background:rgba(0,0,0,0.45);
+  border-right:1px solid rgba(255,255,255,0.07);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.panel-header{padding:12px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;}
+.panel-title{font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:#f0c040;letter-spacing:1px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.search-input{
+  width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+  border-radius:4px;color:#e8dfc0;padding:6px 10px;font-size:12px;outline:none;
+  font-family:'Crimson Text',serif;margin-bottom:8px;
+}
+.search-input::placeholder{color:rgba(232,223,192,0.3);}
+.filter-tabs{display:flex;gap:3px;}
+.filter-tab{
+  flex:1;padding:4px 0;border-radius:3px;cursor:pointer;font-size:10px;font-family:'Cinzel',serif;
+  border:1px solid transparent;background:rgba(255,255,255,0.05);color:rgba(232,223,192,0.4);
+  font-weight:700;letter-spacing:0.5px;transition:all 0.2s;
+}
+.filter-tab.active-all{background:rgba(240,192,64,0.15);border-color:rgba(240,192,64,0.4);color:#f0c040;}
+.filter-tab.active-monster{background:rgba(212,119,74,0.2);border-color:rgba(212,119,74,0.5);color:#d4774a;}
+.filter-tab.active-spell{background:rgba(26,106,74,0.2);border-color:rgba(26,106,74,0.5);color:#4ade80;}
+.filter-tab.active-trap{background:rgba(122,26,90,0.2);border-color:rgba(122,26,90,0.5);color:#f472b6;}
+.cards-grid{flex:1;overflow-y:auto;padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;}
+.cards-grid::-webkit-scrollbar{width:4px;}
+.cards-grid::-webkit-scrollbar-track{background:transparent;}
+.cards-grid::-webkit-scrollbar-thumb{background:rgba(240,192,64,0.2);border-radius:2px;}
+
+/* Card mini */
+.card-mini{
+  width:86px;min-height:124px;border-radius:5px;cursor:pointer;
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
+  border:1.5px solid rgba(255,255,255,0.15);transition:transform 0.15s,box-shadow 0.15s;
+  flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.6);
+}
+.card-mini:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.6);}
+.card-mini-img{width:100%;height:66px;object-fit:cover;display:block;}
+.card-mini-noimg{width:100%;height:66px;display:flex;align-items:center;justify-content:center;font-size:24px;background:rgba(0,0,0,0.3);}
+.card-mini-info{padding:3px 4px;flex:1;display:flex;flex-direction:column;gap:1px;}
+.card-mini-name{font-size:8px;font-weight:700;color:#fff;text-shadow:0 1px 2px #000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;}
+.card-mini-type{font-size:7px;color:rgba(255,255,255,0.7);line-height:1.1;}
+.card-mini-level{font-size:7px;color:#f0c040;font-weight:700;}
+.card-mini-stats{font-size:7px;color:rgba(255,255,255,0.85);margin-top:auto;}
+.card-mini-btns{position:absolute;top:-5px;left:-5px;display:flex;gap:2px;opacity:0;transition:opacity 0.2s;}
+.card-mini:hover .card-mini-btns{opacity:1;}
+.card-mini-btn{width:16px;height:16px;border-radius:50%;font-size:8px;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.card-mini-btn-edit{background:#2a5a8a;}
+.card-mini-btn-del{background:#8a2a2a;}
+.empty-lib{width:100%;text-align:center;color:rgba(232,223,192,0.25);padding-top:40px;font-size:13px;font-style:italic;}
+
+/* Deck panel */
+#deck-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.deck-toolbar{
+  padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.07);
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0;
+}
+.deck-tab{
+  padding:4px 11px;border-radius:4px;cursor:pointer;font-size:11px;
+  font-family:'Cinzel',serif;font-weight:700;letter-spacing:0.5px;
+  border:1px solid rgba(240,192,64,0.25);background:rgba(255,255,255,0.04);
+  color:rgba(240,192,64,0.5);transition:all 0.2s;
+}
+.deck-tab.active{background:rgba(240,192,64,0.15);border-color:rgba(240,192,64,0.5);color:#f0c040;}
+#deck-name-input{
+  background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);
+  border-radius:4px;color:#e8dfc0;padding:4px 9px;font-size:12px;outline:none;width:130px;
+  font-family:'Crimson Text',serif;
+}
+.btn{
+  padding:5px 13px;border-radius:4px;cursor:pointer;font-family:'Cinzel',serif;
+  font-size:11px;font-weight:700;letter-spacing:0.5px;border:none;transition:all 0.2s;
+}
+.btn-gold{background:linear-gradient(90deg,#f0c040,#c89010);color:#07040f;}
+.btn-ghost{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:rgba(232,223,192,0.7);}
+.btn-red{background:linear-gradient(90deg,#8a2a2a,#c0392b);color:#fff;}
+.btn-blue{background:linear-gradient(90deg,#2a3a8a,#3a5abf);color:#fff;}
+.deck-content{flex:1;overflow-y:auto;padding:14px;}
+.deck-content::-webkit-scrollbar{width:4px;}
+.deck-content::-webkit-scrollbar-track{background:transparent;}
+.deck-content::-webkit-scrollbar-thumb{background:rgba(240,192,64,0.2);border-radius:2px;}
+.deck-meta{display:flex;justify-content:space-between;margin-bottom:10px;font-size:12px;color:rgba(232,223,192,0.5);}
+.deck-progress{height:5px;border-radius:3px;background:rgba(255,255,255,0.07);margin-bottom:14px;overflow:hidden;}
+.deck-progress-bar{height:100%;border-radius:3px;transition:width 0.3s;}
+.deck-cards{display:flex;flex-wrap:wrap;gap:7px;}
+.deck-card-wrap{position:relative;}
+.deck-remove{position:absolute;bottom:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:#8a2a2a;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;cursor:pointer;border:none;font-weight:700;}
+.deck-empty{text-align:center;color:rgba(232,223,192,0.25);padding-top:50px;font-size:13px;font-style:italic;}
+.deck-none{text-align:center;color:rgba(232,223,192,0.25);padding-top:70px;font-size:14px;font-style:italic;}
+
+/* ── MODAL ── */
+#modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:500;
+  display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);
+}
+#modal-overlay.open{display:flex;}
+#modal-box{
+  background:linear-gradient(135deg,#0d0820,#07040f 80%);
+  border:1px solid rgba(240,192,64,0.25);border-radius:10px;
+  padding:22px;display:flex;flex-direction:column;gap:12px;
+  max-height:88vh;overflow-y:auto;width:480px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.8);
+}
+#modal-box::-webkit-scrollbar{width:4px;}
+#modal-box::-webkit-scrollbar-track{background:transparent;}
+#modal-box::-webkit-scrollbar-thumb{background:rgba(240,192,64,0.2);}
+.modal-title{font-family:'Cinzel',serif;font-size:15px;color:#f0c040;font-weight:700;letter-spacing:1px;}
+.form-label{font-size:11px;color:rgba(232,223,192,0.55);margin-bottom:3px;display:block;font-family:'Cinzel',serif;letter-spacing:0.5px;}
+.form-input{
+  width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);
+  border-radius:5px;color:#e8dfc0;padding:7px 10px;font-size:13px;outline:none;
+  font-family:'Crimson Text',serif;transition:border-color 0.2s;
+}
+.form-input:focus{border-color:rgba(240,192,64,0.4);}
+.form-row{display:flex;gap:10px;}
+.form-col{flex:1;display:flex;flex-direction:column;}
+.type-btns{display:flex;gap:7px;}
+.type-btn{
+  flex:1;padding:7px 0;border-radius:5px;cursor:pointer;font-weight:700;
+  font-size:12px;border:none;transition:all 0.2s;font-family:'Cinzel',serif;letter-spacing:0.5px;
+}
+.tags{display:flex;flex-wrap:wrap;gap:5px;}
+.tag{
+  padding:3px 10px;border-radius:20px;cursor:pointer;font-size:11px;
+  border:1px solid rgba(255,255,255,0.18);background:transparent;
+  color:rgba(232,223,192,0.55);transition:all 0.15s;font-family:'Crimson Text',serif;
+}
+.tag.active{color:#fff;}
+.arrows-grid{display:grid;grid-template-columns:repeat(3,36px);gap:3px;margin:0 auto;width:fit-content;}
+.arrow-btn{
+  width:36px;height:36px;border-radius:5px;cursor:pointer;font-size:17px;
+  border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.04);
+  color:rgba(232,223,192,0.4);transition:all 0.15s;display:flex;align-items:center;justify-content:center;
+}
+.arrow-btn.active{background:#2a5a8a;border-color:#3a7abf;color:#fff;}
+.arrow-center{width:36px;height:36px;background:rgba(255,255,255,0.03);border-radius:5px;}
+.img-preview{margin-top:6px;width:72px;height:90px;object-fit:cover;border-radius:5px;border:1px solid rgba(255,255,255,0.18);}
+.modal-btns{display:flex;gap:8px;margin-top:4px;}
+
+/* ── DUEL ── */
+#view-duel{flex-direction:column;overflow:hidden;}
+.duel-header{
+  padding:10px 16px;background:rgba(0,0,0,0.6);border-bottom:1px solid rgba(240,192,64,0.2);
+  display:flex;justify-content:space-between;align-items:center;flex-shrink:0;
+}
+.duel-title{font-family:'Cinzel',serif;font-size:15px;color:#f0c040;font-weight:700;letter-spacing:1px;}
+.duel-body{flex:1;display:flex;gap:10px;padding:10px;overflow:hidden;}
+.field{flex:1;display:flex;flex-direction:column;gap:8px;overflow:hidden;}
+.side{border-radius:10px;padding:10px;}
+.side-ai{background:rgba(106,26,42,0.12);border:1px solid rgba(200,80,80,0.2);}
+.side-player{background:rgba(26,58,106,0.12);border:1px solid rgba(80,120,200,0.2);}
+.side-header{display:flex;justify-content:space-between;margin-bottom:8px;align-items:center;}
+.side-name{font-family:'Cinzel',serif;font-size:13px;font-weight:700;}
+.side-name-ai{color:#f87171;}
+.side-name-player{color:#93c5fd;}
+.lp-bar-wrap{flex:1;height:14px;background:rgba(0,0,0,0.4);border-radius:7px;overflow:hidden;margin:0 10px;}
+.lp-bar{height:100%;border-radius:7px;transition:width 0.5s;}
+.lp-bar-ai{background:linear-gradient(90deg,#c0392b,#e74c3c);}
+.lp-bar-player{background:linear-gradient(90deg,#2980b9,#3498db);}
+.lp-text{font-size:11px;color:rgba(232,223,192,0.7);white-space:nowrap;}
+.zones-row{display:flex;gap:6px;justify-content:center;}
+.mzone,.stzone{border-radius:5px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.mzone{width:68px;height:86px;cursor:default;}
+.mzone.clickable{cursor:pointer;}
+.mzone.clickable:hover{border-color:rgba(240,192,64,0.5);box-shadow:0 0 12px rgba(240,192,64,0.2);}
+.mzone.can-atk{border-color:rgba(240,192,64,0.6);box-shadow:0 0 8px rgba(240,192,64,0.25);}
+.stzone{width:68px;height:62px;}
+.zone-empty{font-size:9px;color:rgba(255,255,255,0.18);}
+.zone-img{width:100%;height:100%;object-fit:cover;}
+.zone-icon{font-size:22px;}
+.zone-stats{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.82);font-size:8px;padding:2px 3px;color:#f0c040;text-align:center;}
+.field-center{text-align:center;color:rgba(255,255,255,0.12);font-size:10px;padding:2px 0;font-style:italic;}
+.duel-actions{display:flex;gap:8px;justify-content:center;flex-shrink:0;flex-wrap:wrap;}
+.phase-btn{padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;border:none;font-family:'Cinzel',serif;letter-spacing:0.5px;}
+.phase-btn-draw{background:linear-gradient(90deg,#1a5a8a,#2a7abf);color:#fff;}
+.phase-btn-battle{background:linear-gradient(90deg,#8a1a1a,#c0392b);color:#fff;}
+.phase-btn-end{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(232,223,192,0.8);}
+.hand-area{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;flex-shrink:0;}
+.hand-label{font-size:11px;color:rgba(232,223,192,0.4);margin-bottom:7px;font-style:italic;}
+.hand-cards{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;}
+.hand-cards::-webkit-scrollbar{height:3px;}
+.hand-cards::-webkit-scrollbar-thumb{background:rgba(240,192,64,0.2);}
+.win-banner{border-radius:10px;padding:20px;text-align:center;font-family:'Cinzel',serif;font-size:22px;font-weight:900;letter-spacing:2px;flex-shrink:0;}
+.win-banner.win{background:linear-gradient(135deg,rgba(26,74,26,0.9),rgba(42,138,42,0.9));border:2px solid #4ade80;color:#4ade80;}
+.win-banner.lose{background:linear-gradient(135deg,rgba(74,26,26,0.9),rgba(138,42,42,0.9));border:2px solid #f87171;color:#f87171;}
+.ai-thinking{color:rgba(232,223,192,0.5);font-size:13px;padding:8px 0;font-style:italic;}
+
+/* Log panel */
+.log-panel{width:200px;flex-shrink:0;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;display:flex;flex-direction:column;}
+.log-title{font-family:'Cinzel',serif;font-size:11px;color:#f0c040;font-weight:700;margin-bottom:7px;letter-spacing:1px;}
+.log-entries{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;}
+.log-entries::-webkit-scrollbar{width:3px;}
+.log-entries::-webkit-scrollbar-thumb{background:rgba(240,192,64,0.2);}
+.log-entry{font-size:10px;color:rgba(232,223,192,0.65);line-height:1.4;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:3px;}
+
+/* Scrollbar general */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(240,192,64,0.15);border-radius:3px;}
+
+/* New card btn */
+.new-card-btn{
+  font-size:11px;padding:4px 10px;border-radius:4px;cursor:pointer;
+  background:linear-gradient(90deg,#f0c040,#c89010);border:none;
+  color:#07040f;font-family:'Cinzel',serif;font-weight:700;letter-spacing:0.5px;
+}
+</style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="bg"></div>
+<div id="app">
+  <header>
+    <div class="logo">⚜ YGO DECK STUDIO</div>
+    <div style="flex:1"></div>
+    <button class="nav-btn active" onclick="showView('home')">⚜ ACCUEIL</button>
+    <button class="nav-btn" onclick="showView('builder')">🃏 BUILDER</button>
+  </header>
 
-  <script type="text/babel">
-    const monsterKinds = [
-      "Normal", "Effet", "Rituel", "Fusion", "Synchro", "Xyz", "Lien", "Pendule",
-      "Pendule / Effet", "Pendule / Normal", "Pendule / Fusion", "Pendule / Synchro",
-      "Pendule / Xyz", "Rituel / Pendule", "Jeton"
-    ];
+  <!-- HOME -->
+  <div id="view-home" class="view active" style="flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px;overflow-y:auto;">
+    <div>
+      <div class="home-title">YGO DECK STUDIO</div>
+      <div class="home-subtitle">Crée · Construis · Affronte</div>
+    </div>
+    <div class="home-cards">
+      <div class="home-card" onclick="showView('builder');openCardForm()">
+        <div class="home-card-icon">✨</div>
+        <div class="home-card-title">CRÉER</div>
+        <div class="home-card-desc">Monstres, Magies, Pièges avec images personnalisées</div>
+      </div>
+      <div class="home-card" onclick="showView('builder')">
+        <div class="home-card-icon">📚</div>
+        <div class="home-card-title">CONSTRUIRE</div>
+        <div class="home-card-desc">Compose et gère tes decks jusqu'à 60 cartes</div>
+      </div>
+      <div class="home-card" onclick="showView('builder')">
+        <div class="home-card-icon">⚔️</div>
+        <div class="home-card-title">DUELER</div>
+        <div class="home-card-desc">Affronte l'IA avec ton deck personnalisé</div>
+      </div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-num" id="stat-cards">0</div><div class="stat-label">CARTES</div></div>
+      <div class="stat-sep"></div>
+      <div class="stat"><div class="stat-num" id="stat-decks">0</div><div class="stat-label">DECKS</div></div>
+      <div class="stat-sep"></div>
+      <div class="stat"><div class="stat-num" id="stat-total">0</div><div class="stat-label">EN DECK</div></div>
+    </div>
+  </div>
 
-    const spellKinds = ["Normale", "Jeu-Rapide", "Continue", "Équipement", "Terrain", "Rituelle"];
-    const trapKinds = ["Normal", "Continu", "Contre-piège"];
-    const attributes = ["LUMIÈRE", "TÉNÈBRES", "TERRE", "EAU", "FEU", "VENT", "DIVIN"];
-    const races = [
-      "Aqua", "Bête", "Bête Ailée", "Bête-Guerrier", "Cyberse", "Démon", "Dinosaure", "Dragon",
-      "Elfe", "Feu", "Guerrier", "Insecte", "Machine", "Magicien", "Plante", "Poisson",
-      "Psychique", "Pyro", "Reptile", "Rocher", "Serpent de Mer", "Tonnerre", "Wyrm", "Zombie",
-      "Divin-Bête", "Créateur"
-    ];
-    const linkArrows = [
-      "↖ Haut-Gauche", "↑ Haut", "↗ Haut-Droite", "← Gauche",
-      "→ Droite", "↙ Bas-Gauche", "↓ Bas", "↘ Bas-Droite"
-    ];
-
-    function uid() {
-      return Math.random().toString(36).slice(2) + Date.now().toString(36);
-    }
-
-    const initialCards = [
-      {
-        id: uid(),
-        name: "Dragon Démo",
-        cardType: "Monstre",
-        monsterKind: "Effet",
-        level: 4,
-        attribute: "LUMIÈRE",
-        race: "Dragon",
-        atk: 1800,
-        def: 1200,
-        description: "Quand cette carte est invoquée : piochez 1 carte.",
-        linkArrows: []
-      },
-      {
-        id: uid(),
-        name: "Tourbillon Démo",
-        cardType: "Magie",
-        spellKind: "Jeu-Rapide",
-        description: "Ciblez 1 carte sur le Terrain ; renvoyez-la à la main."
-      },
-      {
-        id: uid(),
-        name: "Gardien Réseau",
-        cardType: "Monstre",
-        monsterKind: "Lien",
-        linkRating: 2,
-        attribute: "TERRE",
-        race: "Cyberse",
-        atk: 1400,
-        linkArrows: ["↓ Bas", "→ Droite"],
-        description: "Si cette carte est Invoquée par Lien : ajoutez 1 monstre Cyberse depuis votre Deck à votre main."
-      }
-    ];
-
-    const emptyCard = {
-      name: "",
-      cardType: "Monstre",
-      monsterKind: "Effet",
-      spellKind: "Normale",
-      trapKind: "Normal",
-      level: 4,
-      rank: 4,
-      linkRating: 1,
-      pendulumScaleLeft: 1,
-      pendulumScaleRight: 1,
-      attribute: "LUMIÈRE",
-      race: "Dragon",
-      atk: 0,
-      def: 0,
-      linkArrows: [],
-      imageUrl: "",
-      description: ""
-    };
-
-    function countCardKinds(deck) {
-      return {
-        monsters: deck.filter(c => c.cardType === "Monstre").length,
-        spells: deck.filter(c => c.cardType === "Magie").length,
-        traps: deck.filter(c => c.cardType === "Piège").length,
-      };
-    }
-
-    function draw(deck, count = 1) {
-      const copy = [...deck];
-      const drawn = copy.splice(0, count);
-      return { drawn, remaining: copy };
-    }
-
-    function aiChoosePlay(hand) {
-      const monster = hand.find(c => c.cardType === "Monstre");
-      if (monster) return { action: "summon", card: monster, text: `L'IA invoque ${monster.name}.` };
-      const spell = hand.find(c => c.cardType === "Magie");
-      if (spell) return { action: "spell", card: spell, text: `L'IA active ${spell.name}.` };
-      return { action: "pass", text: "L'IA passe son tour." };
-    }
-
-    function App() {
-      const [cards, setCards] = React.useState(initialCards);
-      const [deck, setDeck] = React.useState([]);
-      const [form, setForm] = React.useState(emptyCard);
-      const [tab, setTab] = React.useState("builder");
-      const [duel, setDuel] = React.useState(null);
-      const fileInputRef = React.useRef(null);
-      const pasteZoneRef = React.useRef(null);
-
-      const stats = React.useMemo(() => countCardKinds(deck), [deck]);
-
-      const update = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
-
-      const fileToDataUrl = (file) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          setForm(prev => ({ ...prev, imageUrl: String(reader.result || "") }));
-        };
-        reader.readAsDataURL(file);
-      };
-
-      const onImageFileChange = (event) => {
-        const file = event.target.files && event.target.files[0];
-        if (!file) return;
-        fileToDataUrl(file);
-      };
-
-      const onPasteImage = (event) => {
-        const items = event.clipboardData && event.clipboardData.items;
-        if (!items) return;
-        for (const item of items) {
-          if (item.type && item.type.startsWith("image/")) {
-            const file = item.getAsFile();
-            if (file) {
-              fileToDataUrl(file);
-              event.preventDefault();
-              return;
-            }
-          }
-        }
-      };
-
-      const onDropImage = (event) => {
-        event.preventDefault();
-        const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
-        if (file && file.type.startsWith("image/")) {
-          fileToDataUrl(file);
-        }
-      };
-
-      const onDragOverImage = (event) => {
-        event.preventDefault();
-      };
-
-      const toggleArrow = (arrow) => {
-        setForm(prev => ({
-          ...prev,
-          linkArrows: prev.linkArrows.includes(arrow)
-            ? prev.linkArrows.filter(a => a !== arrow)
-            : [...prev.linkArrows, arrow]
-        }));
-      };
-
-      const addCard = () => {
-        if (!form.name.trim()) return;
-        setCards(prev => [...prev, { ...form, id: uid() }]);
-        setForm({ ...emptyCard });
-      };
-
-      const addToDeck = (card) => setDeck(prev => [...prev, card]);
-      const removeFromDeck = (index) => setDeck(prev => prev.filter((_, i) => i !== index));
-
-      const startDuel = () => {
-        const playerDeck = [...deck];
-        const aiDeck = [...deck].reverse();
-        const playerStart = draw(playerDeck, 5);
-        const aiStart = draw(aiDeck, 5);
-        setDuel({
-          turn: 1,
-          phase: "Main Phase 1",
-          log: ["Le duel commence.", "Vous piochez 5 cartes.", "L'IA pioche 5 cartes."],
-          playerLP: 8000,
-          aiLP: 8000,
-          playerDeck: playerStart.remaining,
-          aiDeck: aiStart.remaining,
-          playerHand: playerStart.drawn,
-          aiHand: aiStart.drawn,
-          playerField: [],
-          aiField: []
-        });
-        setTab("duel");
-      };
-
-      const nextAITurn = () => {
-        if (!duel) return;
-        const drawRes = draw(duel.aiDeck, 1);
-        const aiHand = [...duel.aiHand, ...drawRes.drawn];
-        const play = aiChoosePlay(aiHand);
-
-        let newAiHand = aiHand;
-        let newAiField = duel.aiField;
-
-        if (play.card) {
-          newAiHand = aiHand.filter(c => c.id !== play.card.id);
-          if (play.action === "summon") newAiField = [...duel.aiField, play.card];
-        }
-
-        setDuel({
-          ...duel,
-          turn: duel.turn + 1,
-          aiDeck: drawRes.remaining,
-          aiHand: newAiHand,
-          aiField: newAiField,
-          log: [
-            ...duel.log,
-            `Tour ${duel.turn + 1} — IA`,
-            drawRes.drawn[0] ? "L'IA pioche 1 carte." : "L'IA ne peut pas piocher.",
-            play.text
-          ]
-        });
-      };
-
-      return (
-        <div className="container">
-          <div className="header">
-            <h1 className="title">Yu-Gi-Oh! Deck Lab</h1>
-            <p className="subtitle">Prototype MVP : création de cartes, composition de deck et duel de test contre une IA basique.</p>
-          </div>
-
-          <div className="tabs">
-            <button className={tab === "builder" ? "tab active" : "tab"} onClick={() => setTab("builder")}>Création</button>
-            <button className={tab === "deck" ? "tab active" : "tab"} onClick={() => setTab("deck")}>Deck</button>
-            <button className={tab === "duel" ? "tab active" : "tab"} onClick={() => setTab("duel")}>Test IA</button>
-          </div>
-
-          {tab === "builder" && (
-            <div className="grid grid-2">
-              <div className="card">
-                <h2>Éditeur de carte</h2>
-
-                <div className="field">
-                  <label>Nom</label>
-                  <input value={form.name} onChange={e => update("name", e.target.value)} placeholder="Ex. Dragon Éclipse" />
-                </div>
-
-                <div className="inline-grid">
-                  <div className="field">
-                    <label>Type principal</label>
-                    <select value={form.cardType} onChange={e => update("cardType", e.target.value)}>
-                      <option>Monstre</option>
-                      <option>Magie</option>
-                      <option>Piège</option>
-                    </select>
-                  </div>
-
-                  {form.cardType === "Monstre" && (
-                    <div className="field">
-                      <label>Sous-type monstre</label>
-                      <select value={form.monsterKind} onChange={e => update("monsterKind", e.target.value)}>
-                        {monsterKinds.map(kind => <option key={kind}>{kind}</option>)}
-                      </select>
-                    </div>
-                  )}
-
-                  {form.cardType === "Magie" && (
-                    <div className="field">
-                      <label>Sous-type magie</label>
-                      <select value={form.spellKind} onChange={e => update("spellKind", e.target.value)}>
-                        {spellKinds.map(kind => <option key={kind}>{kind}</option>)}
-                      </select>
-                    </div>
-                  )}
-
-                  {form.cardType === "Piège" && (
-                    <div className="field">
-                      <label>Sous-type piège</label>
-                      <select value={form.trapKind} onChange={e => update("trapKind", e.target.value)}>
-                        {trapKinds.map(kind => <option key={kind}>{kind}</option>)}
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                {form.cardType === "Monstre" && (
-                  <>
-                    <div className="inline-grid">
-                      <div className="field">
-                        <label>Attribut</label>
-                        <select value={form.attribute} onChange={e => update("attribute", e.target.value)}>
-                          {attributes.map(item => <option key={item}>{item}</option>)}
-                        </select>
-                      </div>
-                      <div className="field">
-                        <label>Race</label>
-                        <select value={form.race} onChange={e => update("race", e.target.value)}>
-                          {races.map(item => <option key={item}>{item}</option>)}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="inline-grid">
-                      {form.monsterKind.includes("Xyz") ? (
-                        <div className="field">
-                          <label>Rang</label>
-                          <input type="number" value={form.rank} onChange={e => update("rank", Number(e.target.value))} />
-                        </div>
-                      ) : form.monsterKind.includes("Lien") ? (
-                        <div className="field">
-                          <label>Classification Lien</label>
-                          <input type="number" value={form.linkRating} onChange={e => update("linkRating", Number(e.target.value))} />
-                        </div>
-                      ) : (
-                        <div className="field">
-                          <label>Niveau</label>
-                          <input type="number" value={form.level} onChange={e => update("level", Number(e.target.value))} />
-                        </div>
-                      )}
-
-                      <div className="field">
-                        <label>ATK</label>
-                        <input type="number" value={form.atk} onChange={e => update("atk", Number(e.target.value))} />
-                      </div>
-                    </div>
-
-                    {!form.monsterKind.includes("Lien") && (
-                      <div className="field">
-                        <label>DEF</label>
-                        <input type="number" value={form.def} onChange={e => update("def", Number(e.target.value))} />
-                      </div>
-                    )}
-
-                    {form.monsterKind.includes("Pendule") && (
-                      <div className="inline-grid">
-                        <div className="field">
-                          <label>Échelle Pendule gauche</label>
-                          <input type="number" value={form.pendulumScaleLeft} onChange={e => update("pendulumScaleLeft", Number(e.target.value))} />
-                        </div>
-                        <div className="field">
-                          <label>Échelle Pendule droite</label>
-                          <input type="number" value={form.pendulumScaleRight} onChange={e => update("pendulumScaleRight", Number(e.target.value))} />
-                        </div>
-                      </div>
-                    )}
-
-                    {form.monsterKind.includes("Lien") && (
-                      <div className="field">
-                        <label>Flèches de Lien</label>
-                        <div className="arrow-grid">
-                          {linkArrows.map(arrow => (
-                            <button
-                              key={arrow}
-                              className={form.linkArrows.includes(arrow) ? "arrow-btn active" : "arrow-btn"}
-                              onClick={() => toggleArrow(arrow)}
-                              type="button"
-                            >
-                              {arrow}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                <div className="field">
-                  <label>Image de la carte</label>
-                  <input
-                    value={form.imageUrl}
-                    onChange={e => update("imageUrl", e.target.value)}
-                    placeholder="Colle l'URL d'une image, une capture, ou dépose une image ici"
-                  />
-                </div>
-
-                <div
-                  ref={pasteZoneRef}
-                  onPaste={onPasteImage}
-                  onDrop={onDropImage}
-                  onDragOver={onDragOverImage}
-                  tabIndex="0"
-                  style={{
-                    border:'2px dashed #cbd5e1',
-                    borderRadius:'14px',
-                    padding:'16px',
-                    marginBottom:'14px',
-                    background:'#f8fafc',
-                    color:'#475569',
-                    outline:'none'
-                  }}
-                >
-                  <strong>Ajout direct d'image</strong>
-                  <div style={{marginTop:'8px', fontSize:'14px', lineHeight:'1.5'}}>
-                    Colle une image avec <strong>Ctrl+V</strong> ou <strong>Cmd+V</strong>,
-                    ou glisse-dépose une image dans cette zone.
-                  </div>
-                </div>
-
-                <div className="button-row" style={{marginBottom:'14px'}}>
-                  <button className="secondary" type="button" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
-                    Importer depuis un fichier
-                  </button>
-                  {form.imageUrl && (
-                    <button className="secondary" type="button" onClick={() => update("imageUrl", "")}>
-                      Supprimer l'image
-                    </button>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    style={{display:'none'}}
-                    onChange={onImageFileChange}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Texte / Effet</label>
-                  <textarea value={form.description} onChange={e => update("description", e.target.value)} placeholder="Texte de règle, effet ou description..." />
-                </div>
-
-                <div className="button-row">
-                  <button className="primary" onClick={addCard}>Ajouter à la bibliothèque</button>
-                  <button className="secondary" onClick={() => setForm({ ...emptyCard })}>Réinitialiser</button>
-                </div>
-              </div>
-
-              <div className="card">
-                <h2>Aperçu rapide</h2>
-                <div className="preview-box">
-                  {form.imageUrl ? (
-                    <img
-                      src={form.imageUrl}
-                      alt={form.name || 'Aperçu de carte'}
-                      style={{width:'100%', maxHeight:'260px', objectFit:'cover', borderRadius:'12px', marginBottom:'14px', border:'1px solid #e5e7eb'}}
-                    />
-                  ) : (
-                    <div style={{width:'100%', height:'220px', borderRadius:'12px', marginBottom:'14px', border:'1px dashed #d1d5db', display:'flex', alignItems:'center', justifyContent:'center', color:'#6b7280', background:'#f9fafb'}}>
-                      Aucune image
-                    </div>
-                  )}
-                  <div style={{display:'flex', justifyContent:'space-between', gap:'10px', alignItems:'center'}}>
-                    <strong style={{fontSize:'20px'}}>{form.name || 'Nouvelle carte'}</strong>
-                    <span className="badge">{form.cardType}</span>
-                  </div>
-                  <p className="muted">
-                    {form.cardType === 'Monstre'
-                      ? `${form.monsterKind} • ${form.attribute} • ${form.race}`
-                      : form.cardType === 'Magie'
-                        ? `Magie ${form.spellKind}`
-                        : `Piège ${form.trapKind}`}
-                  </p>
-                  {form.cardType === 'Monstre' && (
-                    <div>
-                      {!form.monsterKind.includes('Lien') && !form.monsterKind.includes('Xyz') && <p>Niveau : {form.level}</p>}
-                      {form.monsterKind.includes('Xyz') && <p>Rang : {form.rank}</p>}
-                      {form.monsterKind.includes('Lien') && <p>Lien : {form.linkRating}</p>}
-                      {form.monsterKind.includes('Pendule') && <p>Échelles : {form.pendulumScaleLeft} / {form.pendulumScaleRight}</p>}
-                      {form.monsterKind.includes('Lien') && <p>Flèches : {form.linkArrows.length ? form.linkArrows.join(', ') : 'Aucune'}</p>}
-                      <p>ATK : {form.atk}</p>
-                      {!form.monsterKind.includes('Lien') && <p>DEF : {form.def}</p>}
-                    </div>
-                  )}
-                  <p>{form.description || 'Aucun texte pour le moment.'}</p>
-                </div>
-                <p className="muted">Bibliothèque disponible : {cards.length} carte(s).</p>
-              </div>
-            </div>
-          )}
-
-          {tab === "deck" && (
-            <div className="grid grid-deck">
-              <div className="card">
-                <h2>Bibliothèque</h2>
-                <div className="list">
-                  {cards.map(card => (
-                    <div className="list-item" key={card.id}>
-                      <div style={{display:'flex', gap:'12px', alignItems:'flex-start'}}>
-                        {card.imageUrl ? (
-                          <img src={card.imageUrl} alt={card.name} style={{width:'72px', height:'96px', objectFit:'cover', borderRadius:'10px', border:'1px solid #e5e7eb'}} />
-                        ) : (
-                          <div style={{width:'72px', height:'96px', borderRadius:'10px', border:'1px dashed #d1d5db', display:'flex', alignItems:'center', justifyContent:'center', color:'#6b7280', background:'#f9fafb', fontSize:'12px'}}>
-                            Sans image
-                          </div>
-                        )}
-                        <div>
-                          <div><strong>{card.name}</strong></div>
-                          <div className="muted">
-                            {card.cardType === 'Monstre'
-                              ? `${card.cardType} • ${card.monsterKind}`
-                              : card.cardType === 'Magie'
-                                ? `${card.cardType} • ${card.spellKind}`
-                                : `${card.cardType} • ${card.trapKind}`}
-                          </div>
-                        </div>
-                      </div>
-                      <button className="primary" onClick={() => addToDeck(card)}>Ajouter</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="card">
-                <h2>Deck courant</h2>
-                <div className="stats">
-                  <div className="stat-box"><div className="muted">Total</div><div className="stat-number">{deck.length}</div></div>
-                  <div className="stat-box"><div className="muted">Monstres</div><div className="stat-number">{stats.monsters}</div></div>
-                  <div className="stat-box"><div className="muted">Magies</div><div className="stat-number">{stats.spells}</div></div>
-                  <div className="stat-box"><div className="muted">Pièges</div><div className="stat-number">{stats.traps}</div></div>
-                </div>
-
-                <div className="button-row" style={{margin:'16px 0'}}>
-                  <button className="primary" onClick={startDuel} disabled={deck.length < 5}>Lancer un test IA</button>
-                  <button className="secondary" onClick={() => setDeck([])}>Vider le deck</button>
-                </div>
-
-                <div className="list" style={{maxHeight:'380px'}}>
-                  {deck.map((card, index) => (
-                    <div className="list-item" key={card.id + '-' + index}>
-                      <div style={{display:'flex', gap:'12px', alignItems:'flex-start'}}>
-                        {card.imageUrl ? (
-                          <img src={card.imageUrl} alt={card.name} style={{width:'72px', height:'96px', objectFit:'cover', borderRadius:'10px', border:'1px solid #e5e7eb'}} />
-                        ) : (
-                          <div style={{width:'72px', height:'96px', borderRadius:'10px', border:'1px dashed #d1d5db', display:'flex', alignItems:'center', justifyContent:'center', color:'#6b7280', background:'#f9fafb', fontSize:'12px'}}>
-                            Sans image
-                          </div>
-                        )}
-                        <div>
-                          <div><strong>{card.name}</strong></div>
-                          <div className="muted">{card.cardType}</div>
-                        </div>
-                      </div>
-                      <button className="secondary" onClick={() => removeFromDeck(index)}>Retirer</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {tab === "duel" && (
-            <div className="grid grid-duel">
-              <div className="card">
-                <h2>Duel de test</h2>
-                {!duel ? (
-                  <div className="duel-box muted">Ajoute au moins 5 cartes dans ton deck, puis lance un duel de test depuis l'onglet Deck.</div>
-                ) : (
-                  <>
-                    <div className="inline-grid">
-                      <div className="stat-box"><div className="muted">Vos LP</div><div className="stat-number">{duel.playerLP}</div></div>
-                      <div className="stat-box"><div className="muted">LP IA</div><div className="stat-number">{duel.aiLP}</div></div>
-                    </div>
-                    <div className="duel-box" style={{margin:'16px 0'}}>
-                      <div><strong>Tour {duel.turn}</strong></div>
-                      <div className="muted">Phase : {duel.phase}</div>
-                      <div className="muted" style={{marginTop:'10px'}}>Main : {duel.playerHand.map(c => c.name).join(', ') || 'Aucune'}</div>
-                      <div className="muted" style={{marginTop:'10px'}}>Terrain IA : {duel.aiField.map(c => c.name).join(', ') || 'Vide'}</div>
-                    </div>
-                    <div className="button-row">
-                      <button className="primary" onClick={nextAITurn}>Tour IA suivant</button>
-                      <button className="secondary" onClick={startDuel}>Recommencer</button>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="card">
-                <h2>Journal du duel</h2>
-                <div className="log-list">
-                  {duel && duel.log.length ? duel.log.map((entry, index) => (
-                    <div className="log-item" key={index}>{entry}</div>
-                  )) : <div className="muted">Aucun duel en cours.</div>}
-                </div>
-              </div>
-            </div>
-          )}
+  <!-- BUILDER -->
+  <div id="view-builder" class="view" style="display:none;flex-direction:row;">
+    <div id="library">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>📦 BIBLIOTHÈQUE (<span id="lib-count">0</span>)</span>
+          <button class="new-card-btn" onclick="openCardForm()">+ NOUVELLE</button>
         </div>
-      );
-    }
+        <input class="search-input" id="search-input" placeholder="🔍 Rechercher une carte..." oninput="renderLibrary()">
+        <div class="filter-tabs">
+          <button class="filter-tab active-all" onclick="setFilter('All',this)">TOUT</button>
+          <button class="filter-tab" onclick="setFilter('Monster',this)">MONST.</button>
+          <button class="filter-tab" onclick="setFilter('Spell',this)">MAGIE</button>
+          <button class="filter-tab" onclick="setFilter('Trap',this)">PIÈGE</button>
+        </div>
+      </div>
+      <div class="cards-grid" id="cards-grid"></div>
+    </div>
+    <div id="deck-panel">
+      <div class="deck-toolbar">
+        <span style="font-family:'Cinzel',serif;font-size:12px;color:#f0c040;font-weight:700;letter-spacing:1px;">📚 DECKS</span>
+        <div id="deck-tabs" style="display:flex;gap:5px;flex:1;flex-wrap:wrap;"></div>
+        <input id="deck-name-input" class="form-input" style="width:130px;" placeholder="Nom du deck" value="Mon Deck">
+        <button class="btn btn-ghost" onclick="createDeck()">+ CRÉER</button>
+        <button class="btn btn-red" id="duel-btn" style="display:none;" onclick="startDuel()">⚔️ DUELER</button>
+      </div>
+      <div class="deck-content" id="deck-content">
+        <div class="deck-none">Sélectionne ou crée un deck pour commencer.</div>
+      </div>
+    </div>
+  </div>
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+  <!-- DUEL -->
+  <div id="view-duel" class="view" style="display:none;flex-direction:column;overflow:hidden;">
+    <div class="duel-header">
+      <div class="duel-title">⚔️ DUEL EN COURS</div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <span id="duel-turn-label" style="font-size:12px;color:rgba(232,223,192,0.5);font-style:italic;"></span>
+        <button class="btn btn-ghost" onclick="exitDuel()">❌ Abandonner</button>
+      </div>
+    </div>
+    <div class="duel-body">
+      <div class="field" id="duel-field">
+        <!-- win banner -->
+        <div id="win-banner" style="display:none;"></div>
+        <!-- ai side -->
+        <div class="side side-ai" id="side-ai">
+          <div class="side-header">
+            <span class="side-name side-name-ai">🤖 IA</span>
+            <div class="lp-bar-wrap"><div class="lp-bar lp-bar-ai" id="ai-lp-bar" style="width:100%"></div></div>
+            <span class="lp-text" id="ai-lp">8000 LP</span>
+            <span style="font-size:11px;color:rgba(232,223,192,0.4);margin-left:10px;" id="ai-deck-count">🃏 0 ✋ 0</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div class="zones-row" id="ai-sz"></div>
+            <div class="zones-row" id="ai-mz"></div>
+          </div>
+        </div>
+        <div class="field-center">─── Zone de Champ ───</div>
+        <!-- player side -->
+        <div class="side side-player" id="side-player">
+          <div class="side-header">
+            <span class="side-name side-name-player">👤 Vous</span>
+            <div class="lp-bar-wrap"><div class="lp-bar lp-bar-player" id="p-lp-bar" style="width:100%"></div></div>
+            <span class="lp-text" id="p-lp">8000 LP</span>
+            <span style="font-size:11px;color:rgba(232,223,192,0.4);margin-left:10px;" id="p-deck-count">🃏 0</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div class="zones-row" id="p-mz"></div>
+            <div class="zones-row" id="p-sz"></div>
+          </div>
+        </div>
+        <!-- Actions -->
+        <div class="duel-actions" id="duel-actions"></div>
+        <!-- Hand -->
+        <div class="hand-area">
+          <div class="hand-label" id="hand-label">✋ Main (0 cartes)</div>
+          <div class="hand-cards" id="hand-cards"></div>
+        </div>
+      </div>
+      <div class="log-panel">
+        <div class="log-title">📜 JOURNAL</div>
+        <div class="log-entries" id="log-entries"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <div class="modal-title" id="modal-title">✨ NOUVELLE CARTE</div>
+    <input type="hidden" id="form-id">
+    <div>
+      <label class="form-label">NOM DE LA CARTE</label>
+      <input class="form-input" id="form-name" placeholder="Ex: Dragon Blanc aux Yeux Bleus">
+    </div>
+    <div>
+      <label class="form-label">TYPE PRINCIPAL</label>
+      <div class="type-btns">
+        <button class="type-btn" id="tb-monster" onclick="setCardType('Monster')" style="background:#d4774a;color:#fff;">⚔️ MONSTRE</button>
+        <button class="type-btn" id="tb-spell" onclick="setCardType('Spell')" style="background:rgba(255,255,255,0.08);color:rgba(232,223,192,0.5);">✨ MAGIE</button>
+        <button class="type-btn" id="tb-trap" onclick="setCardType('Trap')" style="background:rgba(255,255,255,0.08);color:rgba(232,223,192,0.5);">⚠️ PIÈGE</button>
+      </div>
+    </div>
+    <div id="monster-subtype-row">
+      <label class="form-label">TYPE DE MONSTRE</label>
+      <div class="tags" id="monster-tags"></div>
+    </div>
+    <div id="spell-subtype-row" style="display:none;">
+      <label class="form-label">TYPE DE MAGIE</label>
+      <div class="tags" id="spell-tags"></div>
+    </div>
+    <div id="trap-subtype-row" style="display:none;">
+      <label class="form-label">TYPE DE PIÈGE</label>
+      <div class="tags" id="trap-tags"></div>
+    </div>
+    <div id="monster-stats" style="display:flex;flex-direction:column;gap:10px;">
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">ATTRIBUT</label>
+          <select class="form-input" id="form-attr" style="padding:6px 8px;">
+            <option>DARK</option><option>LIGHT</option><option>EARTH</option>
+            <option>WATER</option><option>FIRE</option><option>WIND</option><option>DIVINE</option>
+          </select>
+        </div>
+        <div class="form-col" id="level-col">
+          <label class="form-label" id="level-label">NIVEAU</label>
+          <input class="form-input" type="number" id="form-level" min="1" max="12" value="4">
+        </div>
+        <div class="form-col" id="link-col" style="display:none;">
+          <label class="form-label">LINK RATING</label>
+          <input class="form-input" type="number" id="form-link-rating" min="1" max="8" value="1">
+        </div>
+      </div>
+      <div class="form-row" id="atk-def-row">
+        <div class="form-col">
+          <label class="form-label">ATK</label>
+          <input class="form-input" type="number" id="form-atk" min="0" value="1500">
+        </div>
+        <div class="form-col">
+          <label class="form-label">DEF</label>
+          <input class="form-input" type="number" id="form-def" min="0" value="1000">
+        </div>
+      </div>
+      <div class="form-row" id="pend-row" style="display:none;">
+        <div class="form-col">
+          <label class="form-label">ÉCHELLE GAUCHE</label>
+          <input class="form-input" type="number" id="form-pend-l" min="0" max="13" value="1">
+        </div>
+        <div class="form-col">
+          <label class="form-label">ÉCHELLE DROITE</label>
+          <input class="form-input" type="number" id="form-pend-r" min="0" max="13" value="8">
+        </div>
+      </div>
+      <div id="arrows-row" style="display:none;">
+        <label class="form-label">FLÈCHES DE LIEN</label>
+        <div class="arrows-grid" id="arrows-grid"></div>
+        <div style="font-size:10px;color:rgba(232,223,192,0.35);text-align:center;margin-top:4px;" id="arrows-selected">Aucune flèche</div>
+      </div>
+    </div>
+    <div>
+      <label class="form-label">EFFET / DESCRIPTION</label>
+      <textarea class="form-input" id="form-effect" rows="3" style="resize:vertical;font-family:'Crimson Text',serif;" placeholder="Décris l'effet de ta carte..."></textarea>
+    </div>
+    <div>
+      <label class="form-label">IMAGE DE LA CARTE</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="form-input" id="form-img-url" placeholder="URL (https://...)" oninput="previewImage()">
+        <button class="btn btn-ghost" onclick="document.getElementById('form-img-file').click()">📁</button>
+        <input type="file" id="form-img-file" accept="image/*" style="display:none" onchange="handleImageFile(event)">
+      </div>
+      <img id="form-img-preview" class="img-preview" style="display:none">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-gold" onclick="saveCard()" style="flex:1;padding:10px 0;">💾 SAUVEGARDER</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let cards = [], decks = [], activeDeckId = null, currentFilter = 'All';
+let editingCardId = null, formImageData = null;
+let selectedMonsterType = 'Effect', selectedSpellType = 'Normal', selectedTrapType = 'Normal';
+let selectedLinkArrows = [];
+let duelState = null, aiQueue = false;
+
+const CARD_COLORS = {Normal:'#c8a84b',Effect:'#d4774a',Fusion:'#9c5fa4',Ritual:'#5a7db5',Synchro:'#bbb',XYZ:'#222',Pendulum:'#3a8a5a',Link:'#2a5a8a',Token:'#666',Spell:'#1a6a4a',Trap:'#7a1a5a'};
+const MONSTER_TYPES = ['Normal','Effect','Fusion','Ritual','Synchro','XYZ','Pendulum','Link','Token'];
+const SPELL_TYPES = ['Normal','Quick-Play','Field','Equip','Continuous','Ritual'];
+const TRAP_TYPES = ['Normal','Continuous','Counter'];
+const LINK_ARROWS = [{id:'TL',l:'↖'},{id:'T',l:'↑'},{id:'TR',l:'↗'},{id:'L',l:'←'},{id:'R',l:'→'},{id:'BL',l:'↙'},{id:'B',l:'↓'},{id:'BR',l:'↘'}];
+const ARROW_GRID = ['TL','T','TR','L','X','R','BL','B','BR'];
+
+function uid(){return Math.random().toString(36).slice(2,10);}
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
+function save(){try{sessionStorage.setItem('ygo_c',JSON.stringify(cards));sessionStorage.setItem('ygo_d',JSON.stringify(decks));}catch{}}
+function load(){try{const c=sessionStorage.getItem('ygo_c'),d=sessionStorage.getItem('ygo_d');if(c)cards=JSON.parse(c);if(d)decks=JSON.parse(d);}catch{}}
+
+// ─── CARD COLOR ───────────────────────────────────────────────────────────────
+function cardBg(card){return card.cardType==='Monster'?(CARD_COLORS[card.monsterType]||'#d4774a'):card.cardType==='Spell'?CARD_COLORS.Spell:CARD_COLORS.Trap;}
+
+// ─── CARD HTML ────────────────────────────────────────────────────────────────
+function cardMiniHTML(card, opts={}){
+  const bg=cardBg(card);
+  const imgHTML=card.imageData||card.imageUrl
+    ?`<img class="card-mini-img" src="${card.imageData||card.imageUrl}" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`
+    :'';
+  const noImg=`<div class="card-mini-noimg" style="${card.imageData||card.imageUrl?'display:none':''}">
+    ${card.cardType==='Spell'?'✨':card.cardType==='Trap'?'⚠️':'⚔️'}</div>`;
+  const isXYZ=card.monsterType==='XYZ';
+  const statsLine=card.cardType==='Monster'?(card.monsterType==='Link'?`LINK-${card.linkRating}`:`${card.atk}/${card.def}`):'';
+  const levelLine=card.cardType==='Monster'?(isXYZ?`Rang ${card.level||0}`:`Niv.${card.level||0}`):'';
+  const typeLine=card.cardType==='Monster'?card.monsterType:`${card.cardType}`;
+  const editBtns=opts.showEdit?`<div class="card-mini-btns">
+    <button class="card-mini-btn card-mini-btn-edit" onclick="event.stopPropagation();editCard('${card.id}')">✏</button>
+    <button class="card-mini-btn card-mini-btn-del" onclick="event.stopPropagation();deleteCard('${card.id}')">✕</button>
+  </div>`:'';
+  const removeBtns=opts.showRemove?`<button class="deck-remove" onclick="event.stopPropagation();removeFromDeck('${opts.deckId}',${opts.idx})">−</button>`:'';
+  return `<div class="card-mini" style="background:${bg};" onclick="${opts.onclick||''}">
+    ${editBtns}${imgHTML}${noImg}
+    <div class="card-mini-info">
+      <div class="card-mini-name">${card.name||'Sans nom'}</div>
+      <div class="card-mini-type">${typeLine}</div>
+      ${levelLine?`<div class="card-mini-level">${levelLine}</div>`:''}
+      ${statsLine?`<div class="card-mini-stats">${statsLine}</div>`:''}
+    </div>
+    ${removeBtns}
+  </div>`;
+}
+
+// ─── VIEWS ────────────────────────────────────────────────────────────────────
+function showView(v){
+  document.querySelectorAll('.view').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  if(v==='home'){document.getElementById('view-home').style.display='flex';document.querySelectorAll('.nav-btn')[0].classList.add('active');updateStats();}
+  else if(v==='builder'){document.getElementById('view-builder').style.display='flex';document.querySelectorAll('.nav-btn')[1].classList.add('active');renderLibrary();renderDeck();}
+  else if(v==='duel'){document.getElementById('view-duel').style.display='flex';}
+}
+
+function updateStats(){
+  document.getElementById('stat-cards').textContent=cards.length;
+  document.getElementById('stat-decks').textContent=decks.length;
+  document.getElementById('stat-total').textContent=decks.reduce((a,d)=>a+d.cards.length,0);
+}
+
+// ─── LIBRARY ──────────────────────────────────────────────────────────────────
+function setFilter(f, btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-tab').forEach(t=>{t.className='filter-tab';});
+  if(f==='All')btn.className='filter-tab active-all';
+  else if(f==='Monster')btn.className='filter-tab active-monster';
+  else if(f==='Spell')btn.className='filter-tab active-spell';
+  else btn.className='filter-tab active-trap';
+  renderLibrary();
+}
+
+function renderLibrary(){
+  const q=(document.getElementById('search-input').value||'').toLowerCase();
+  const filtered=cards.filter(c=>(currentFilter==='All'||c.cardType===currentFilter)&&(!q||c.name.toLowerCase().includes(q)));
+  document.getElementById('lib-count').textContent=cards.length;
+  const grid=document.getElementById('cards-grid');
+  if(!filtered.length){grid.innerHTML=`<div class="empty-lib">${cards.length===0?'Crée ta première carte !':'Aucune carte trouvée'}</div>`;return;}
+  grid.innerHTML=filtered.map(c=>`<div style="position:relative">`+cardMiniHTML(c,{showEdit:true,onclick:`addCardToDeck('${c.id}')`})+`</div>`).join('');
+}
+
+// ─── DECK MANAGEMENT ──────────────────────────────────────────────────────────
+function createDeck(){
+  const name=document.getElementById('deck-name-input').value||'Mon Deck';
+  const d={id:uid(),name,cards:[]};
+  decks.push(d);activeDeckId=d.id;save();renderDeckTabs();renderDeck();
+}
+
+function renderDeckTabs(){
+  const tabs=document.getElementById('deck-tabs');
+  tabs.innerHTML=decks.map(d=>`<button class="deck-tab${d.id===activeDeckId?' active':''}" onclick="selectDeck('${d.id}')">${d.name} (${d.cards.length})</button>`).join('');
+  document.getElementById('duel-btn').style.display=activeDeckId?'':'none';
+}
+
+function selectDeck(id){activeDeckId=id;renderDeckTabs();renderDeck();}
+
+function renderDeck(){
+  renderDeckTabs();
+  const el=document.getElementById('deck-content');
+  const deck=decks.find(d=>d.id===activeDeckId);
+  if(!deck){el.innerHTML='<div class="deck-none">Sélectionne ou crée un deck pour commencer.</div>';return;}
+  const pct=Math.min(100,deck.cards.length/60*100);
+  const col=deck.cards.length<20?'#f87171':deck.cards.length>=40?'#4ade80':'#f0c040';
+  const status=deck.cards.length<20?'⚠ Min 20 cartes':deck.cards.length>=40?'✅ Deck prêt':'📋 En construction';
+  el.innerHTML=`<div class="deck-meta"><span>${deck.name} — ${deck.cards.length}/60 cartes</span><span style="color:${col}">${status}</span></div>
+    <div class="deck-progress"><div class="deck-progress-bar" style="width:${pct}%;background:linear-gradient(90deg,${col},${deck.cards.length>=40?'#22c55e':'#c89010'})"></div></div>
+    ${deck.cards.length===0?'<div class="deck-empty">Clique sur une carte pour l\'ajouter au deck.</div>':
+    '<div class="deck-cards">'+deck.cards.map((c,i)=>`<div class="deck-card-wrap">${cardMiniHTML(c,{showRemove:true,deckId:deck.id,idx:i})}</div>`).join('')+'</div>'}`;
+}
+
+function addCardToDeck(cardId){
+  if(!activeDeckId)return;
+  const deck=decks.find(d=>d.id===activeDeckId);
+  if(!deck)return;
+  if(deck.cards.filter(c=>c.id===cardId).length>=3){return;}
+  if(deck.cards.length>=60)return;
+  const card=cards.find(c=>c.id===cardId);
+  if(!card)return;
+  deck.cards.push({...card});save();renderDeck();
+}
+
+function removeFromDeck(deckId,idx){
+  const deck=decks.find(d=>d.id===deckId);if(!deck)return;
+  deck.cards.splice(idx,1);save();renderDeck();
+}
+
+// ─── CARD FORM ────────────────────────────────────────────────────────────────
+function buildTagButtons(){
+  const mtags=document.getElementById('monster-tags');
+  mtags.innerHTML=MONSTER_TYPES.map(t=>`<button class="tag${t===selectedMonsterType?' active':''}" 
+    style="${t===selectedMonsterType?`background:${CARD_COLORS[t]||'#f0c040'}33;border-color:${CARD_COLORS[t]||'#f0c040'};color:#fff`:''}"
+    onclick="setMonsterType('${t}')">${t}</button>`).join('');
+  const stags=document.getElementById('spell-tags');
+  stags.innerHTML=SPELL_TYPES.map(t=>`<button class="tag${t===selectedSpellType?' active':''}"
+    style="${t===selectedSpellType?'background:#1a6a4a33;border-color:#1a6a4a;color:#fff':''}"
+    onclick="setSpellType('${t}')">${t}</button>`).join('');
+  const ttags=document.getElementById('trap-tags');
+  ttags.innerHTML=TRAP_TYPES.map(t=>`<button class="tag${t===selectedTrapType?' active':''}"
+    style="${t===selectedTrapType?'background:#7a1a5a33;border-color:#7a1a5a;color:#fff':''}"
+    onclick="setTrapType('${t}')">${t}</button>`).join('');
+  buildArrowGrid();
+}
+
+function buildArrowGrid(){
+  const g=document.getElementById('arrows-grid');
+  g.innerHTML=ARROW_GRID.map(id=>{
+    if(id==='X')return`<div class="arrow-center"></div>`;
+    const a=LINK_ARROWS.find(x=>x.id===id);
+    const active=selectedLinkArrows.includes(id);
+    return`<button class="arrow-btn${active?' active':''}" onclick="toggleArrow('${id}')">${a.l}</button>`;
+  }).join('');
+  document.getElementById('arrows-selected').textContent=selectedLinkArrows.join(' ')||'Aucune flèche';
+}
+
+function toggleArrow(id){
+  if(selectedLinkArrows.includes(id))selectedLinkArrows=selectedLinkArrows.filter(a=>a!==id);
+  else selectedLinkArrows=[...selectedLinkArrows,id];
+  buildArrowGrid();
+}
+
+function setMonsterType(t){
+  selectedMonsterType=t;
+  const isLink=t==='Link',isPend=t==='Pendulum',isXYZ=t==='XYZ';
+  document.getElementById('level-col').style.display=isLink?'none':'';
+  document.getElementById('link-col').style.display=isLink?'':'none';
+  document.getElementById('atk-def-row').style.display=isLink?'none':'';
+  document.getElementById('pend-row').style.display=isPend?'':'none';
+  document.getElementById('arrows-row').style.display=isLink?'':'none';
+  document.getElementById('level-label').textContent=isXYZ?'RANG':'NIVEAU';
+  buildTagButtons();
+}
+function setSpellType(t){selectedSpellType=t;buildTagButtons();}
+function setTrapType(t){selectedTrapType=t;buildTagButtons();}
+
+function setCardType(t){
+  document.getElementById('monster-subtype-row').style.display=t==='Monster'?'':'none';
+  document.getElementById('spell-subtype-row').style.display=t==='Spell'?'':'none';
+  document.getElementById('trap-subtype-row').style.display=t==='Trap'?'':'none';
+  document.getElementById('monster-stats').style.display=t==='Monster'?'flex':'none';
+  const styles={Monster:'background:#d4774a;color:#fff',Spell:'background:#1a6a4a;color:#fff',Trap:'background:#7a1a5a;color:#fff'};
+  const off='background:rgba(255,255,255,0.08);color:rgba(232,223,192,0.5)';
+  document.getElementById('tb-monster').style.cssText=t==='Monster'?styles.Monster:off;
+  document.getElementById('tb-spell').style.cssText=t==='Spell'?styles.Spell:off;
+  document.getElementById('tb-trap').style.cssText=t==='Trap'?styles.Trap:off;
+  document.getElementById('tb-monster').dataset.type='Monster';
+  document.getElementById('tb-spell').dataset.type='Spell';
+  document.getElementById('tb-trap').dataset.type='Trap';
+  window._formCardType=t;
+}
+
+function openCardForm(card=null){
+  editingCardId=card?card.id:null;
+  formImageData=card?card.imageData:null;
+  selectedMonsterType=card?card.monsterType:'Effect';
+  selectedSpellType=card?card.spellType:'Normal';
+  selectedTrapType=card?card.trapType:'Normal';
+  selectedLinkArrows=card?[...card.linkArrows]:[];
+  document.getElementById('modal-title').textContent=card?'✏️ MODIFIER LA CARTE':'✨ NOUVELLE CARTE';
+  document.getElementById('form-id').value=card?card.id:uid();
+  document.getElementById('form-name').value=card?card.name:'';
+  document.getElementById('form-attr').value=card?card.attribute:'DARK';
+  document.getElementById('form-level').value=card?card.level:4;
+  document.getElementById('form-link-rating').value=card?card.linkRating:1;
+  document.getElementById('form-atk').value=card?card.atk:1500;
+  document.getElementById('form-def').value=card?card.def:1000;
+  document.getElementById('form-pend-l').value=card?card.pendScaleL:1;
+  document.getElementById('form-pend-r').value=card?card.pendScaleR:8;
+  document.getElementById('form-effect').value=card?card.effect:'';
+  document.getElementById('form-img-url').value=card?card.imageUrl:'';
+  const prev=document.getElementById('form-img-preview');
+  if(card&&(card.imageData||card.imageUrl)){prev.src=card.imageData||card.imageUrl;prev.style.display='';}
+  else{prev.style.display='none';}
+  setCardType(card?card.cardType:'Monster');
+  buildTagButtons();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function editCard(id){const c=cards.find(x=>x.id===id);if(c)openCardForm(c);}
+function deleteCard(id){cards=cards.filter(c=>c.id!==id);save();renderLibrary();}
+
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+
+function previewImage(){
+  const url=document.getElementById('form-img-url').value;
+  const prev=document.getElementById('form-img-preview');
+  if(url){prev.src=url;prev.style.display='';formImageData=null;}
+  else prev.style.display='none';
+}
+
+function handleImageFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    formImageData=ev.target.result;
+    const prev=document.getElementById('form-img-preview');
+    prev.src=formImageData;prev.style.display='';
+    document.getElementById('form-img-url').value='';
+  };
+  r.readAsDataURL(file);
+}
+
+function saveCard(){
+  const cardType=window._formCardType||'Monster';
+  const card={
+    id:document.getElementById('form-id').value,
+    name:document.getElementById('form-name').value,
+    cardType,
+    monsterType:selectedMonsterType,spellType:selectedSpellType,trapType:selectedTrapType,
+    attribute:document.getElementById('form-attr').value,
+    level:+document.getElementById('form-level').value,
+    linkRating:+document.getElementById('form-link-rating').value,
+    atk:+document.getElementById('form-atk').value,
+    def:+document.getElementById('form-def').value,
+    pendScaleL:+document.getElementById('form-pend-l').value,
+    pendScaleR:+document.getElementById('form-pend-r').value,
+    linkArrows:[...selectedLinkArrows],
+    effect:document.getElementById('form-effect').value,
+    imageUrl:document.getElementById('form-img-url').value,
+    imageData:formImageData,
+  };
+  if(editingCardId)cards=cards.map(c=>c.id===editingCardId?card:c);
+  else cards.push(card);
+  save();closeModal();renderLibrary();renderDeck();updateStats();
+}
+
+// ─── DUEL ENGINE ──────────────────────────────────────────────────────────────
+function mkBoard(deck){return{lp:8000,deck:shuffle([...deck]),hand:[],mz:Array(5).fill(null),sz:Array(5).fill(null)};}
+function drawCard(b){if(!b.deck.length)return false;b.hand.push(b.deck.shift());return true;}
+function addLog(msg){
+  const el=document.getElementById('log-entries');
+  const div=document.createElement('div');div.className='log-entry';div.textContent=msg;
+  el.appendChild(div);el.scrollTop=el.scrollHeight;
+  duelState.log.push(msg);
+}
+
+function startDuel(){
+  const deck=decks.find(d=>d.id===activeDeckId);
+  if(!deck){alert('Sélectionne un deck !');return;}
+  if(deck.cards.length<20){alert('Ton deck doit avoir au moins 20 cartes !');return;}
+  duelState={
+    p:mkBoard(deck.cards),a:mkBoard(shuffle([...deck.cards])),
+    turn:1,phase:'draw',active:'player',log:[]
+  };
+  for(let i=0;i<5;i++){drawCard(duelState.p);drawCard(duelState.a);}
+  document.getElementById('log-entries').innerHTML='';
+  addLog('⚔️ Le duel commence ! Chaque joueur pioche 5 cartes.');
+  showView('duel');renderDuel();
+}
+
+function exitDuel(){duelState=null;showView('builder');}
+
+function winner(){
+  if(!duelState)return null;
+  if(duelState.p.lp<=0)return'ai';
+  if(duelState.a.lp<=0)return'player';
+  return null;
+}
+
+function renderDuel(){
+  if(!duelState)return;
+  const s=duelState;
+  document.getElementById('duel-turn-label').textContent=`Tour ${s.turn} — ${s.active==='player'?'Votre tour':'Tour IA'} — Phase: ${s.phase}`;
+  // LPs
+  document.getElementById('ai-lp').textContent=`${Math.max(0,s.a.lp)} LP`;
+  document.getElementById('p-lp').textContent=`${Math.max(0,s.p.lp)} LP`;
+  document.getElementById('ai-lp-bar').style.width=`${Math.max(0,s.a.lp/8000*100)}%`;
+  document.getElementById('p-lp-bar').style.width=`${Math.max(0,s.p.lp/8000*100)}%`;
+  document.getElementById('ai-deck-count').textContent=`🃏 ${s.a.deck.length} ✋ ${s.a.hand.length}`;
+  document.getElementById('p-deck-count').textContent=`🃏 ${s.p.deck.length}`;
+
+  // Monster zones
+  function renderMZ(zones,elId,side){
+    const el=document.getElementById(elId);
+    el.innerHTML=zones.map((m,i)=>{
+      const clickable=side==='player'&&s.phase==='battle'&&m&&m.canAtk;
+      const canAtk=m&&m.canAtk&&side==='player';
+      return`<div class="mzone${clickable?' clickable can-atk':''}" onclick="${clickable?`duelAttack(${i})`:''}" title="${m?m.name:''}">
+        ${m?(m.imageData||m.imageUrl
+          ?`<img class="zone-img" src="${m.imageData||m.imageUrl}" onerror="this.style.display='none'">`
+          :`<div class="zone-icon">⚔️</div>`)
+          :`<span class="zone-empty">Zone ${i+1}</span>`}
+        ${m?`<div class="zone-stats">${m.atk||0}/${m.def||0}${canAtk?' ⚡':''}</div>`:''}
+      </div>`;
+    }).join('');
+  }
+  function renderSZ(zones,elId){
+    const el=document.getElementById(elId);
+    el.innerHTML=zones.map((c,i)=>`<div class="stzone" style="border-color:${c?(c.cardType==='Spell'?'rgba(26,106,74,0.6)':'rgba(122,26,90,0.6)'):'rgba(255,255,255,0.12)'};background:${c?(c.cardType==='Spell'?'rgba(26,106,74,0.15)':'rgba(122,26,90,0.15)'):'rgba(255,255,255,0.02)'}">
+      ${c?(c.faceUp?(c.cardType==='Spell'?'✨':'⚠️'):'🔲'):`<span class="zone-empty"></span>`}
+    </div>`).join('');
+  }
+  renderMZ(s.a.mz,'ai-mz','ai');renderSZ(s.a.sz,'ai-sz');
+  renderMZ(s.p.mz,'p-mz','player');renderSZ(s.p.sz,'p-sz');
+
+  // Hand
+  const handEl=document.getElementById('hand-cards');
+  document.getElementById('hand-label').textContent=`✋ Main (${s.p.hand.length} cartes)${s.phase==='main'?' — Clic pour jouer':''}`;
+  handEl.innerHTML=s.p.hand.map((c,i)=>cardMiniHTML(c,{onclick:`duelPlayCard(${i})`})).join('');
+
+  // Actions
+  const actEl=document.getElementById('duel-actions');
+  const w=winner();
+  if(w){
+    const banner=document.getElementById('win-banner');
+    banner.style.display='';
+    banner.className='win-banner '+(w==='player'?'win':'lose');
+    banner.textContent=w==='player'?'🏆 VOUS GAGNEZ !':'💀 DÉFAITE...';
+    actEl.innerHTML='';
+    return;
+  }
+  document.getElementById('win-banner').style.display='none';
+  if(s.active==='ai'){actEl.innerHTML='<span class="ai-thinking">⏳ L\'IA réfléchit...</span>';return;}
+  let btns='';
+  if(s.phase==='draw')btns+=`<button class="phase-btn phase-btn-draw" onclick="duelDraw()">🃏 Piocher</button>`;
+  if(s.phase==='main')btns+=`<button class="phase-btn phase-btn-battle" onclick="duelGoBattle()">⚔️ Phase Battle</button>`;
+  if(s.phase==='main'||s.phase==='battle')btns+=`<button class="phase-btn phase-btn-end" onclick="duelEndTurn()">⏭ Fin de Tour</button>`;
+  actEl.innerHTML=btns;
+}
+
+function duelDraw(){
+  if(duelState.phase!=='draw'||duelState.active!=='player')return;
+  if(!drawCard(duelState.p)){addLog('❌ Deck vide ! Vous perdez.');renderDuel();return;}
+  duelState.phase='main';addLog(`🃏 Vous piochez (${duelState.p.hand.length} en main).`);renderDuel();
+}
+
+function duelPlayCard(i){
+  const s=duelState;
+  if(s.phase!=='main'||s.active!=='player')return;
+  const card=s.p.hand[i];if(!card)return;
+  if(card.cardType==='Monster'){
+    if((card.level||0)>4){addLog('❌ Niveau >4 : Sacrifice requis (non dispo).');return;}
+    const z=s.p.mz.findIndex(x=>!x);if(z<0){addLog('❌ Zones monstres pleines.');return;}
+    s.p.hand.splice(i,1);s.p.mz[z]={...card,canAtk:false};
+    addLog(`✅ ${card.name||'Monstre'} invoqué ! (ATK:${card.atk||0})`);
+  }else{
+    const z=s.p.sz.findIndex(x=>!x);if(z<0){addLog('❌ Zones M/P pleines.');return;}
+    s.p.hand.splice(i,1);s.p.sz[z]={...card,faceUp:card.cardType==='Spell'};
+    addLog(`✅ ${card.cardType==='Spell'?card.name:'Carte piège'} posé(e).`);
+  }
+  renderDuel();
+}
+
+function duelGoBattle(){
+  if(duelState.phase!=='main'||duelState.active!=='player')return;
+  duelState.phase='battle';
+  duelState.p.mz=duelState.p.mz.map(m=>m?{...m,canAtk:true}:null);
+  addLog('⚔️ Phase Battle !');renderDuel();
+}
+
+function duelAttack(zi){
+  const s=duelState;
+  if(s.phase!=='battle'||s.active!=='player')return;
+  const atk=s.p.mz[zi];if(!atk||!atk.canAtk){addLog('❌ Ce monstre ne peut pas attaquer.');return;}
+  const ams=s.a.mz.map((m,i)=>m?{...m,_i:i}:null).filter(Boolean);
+  if(!ams.length){
+    const d=atk.atk||0;s.a.lp-=d;s.p.mz[zi].canAtk=false;
+    addLog(`💥 Attaque directe ! IA perd ${d} LP (${Math.max(0,s.a.lp)})${s.a.lp<=0?' 🏆':''}`);
+  }else{
+    const t=ams.reduce((a,b)=>(a.atk||0)<(b.atk||0)?a:b);
+    const aa=atk.atk||0,ba=t.atk||0;
+    if(aa>ba){s.a.mz[t._i]=null;s.a.lp-=(aa-ba);s.p.mz[zi].canAtk=false;addLog(`💥 ${atk.name||'?'} détruit ${t.name||'?'} ! IA -${aa-ba} LP (${Math.max(0,s.a.lp)})`);}
+    else if(aa<ba){s.p.mz[zi]=null;s.p.lp-=(ba-aa);addLog(`💀 ${t.name||'?'} détruit ${atk.name||'?'} ! -${ba-aa} LP (${Math.max(0,s.p.lp)})`);}
+    else{s.a.mz[t._i]=null;s.p.mz[zi]=null;addLog('💫 Combat nul !');}
+  }
+  renderDuel();
+}
+
+function duelEndTurn(){
+  if(duelState.active!=='player')return;
+  duelState.active='ai';duelState.phase='draw';duelState.turn++;
+  addLog(`--- Tour ${duelState.turn} : IA ---`);renderDuel();
+  setTimeout(runAiTurn,600);
+}
+
+function runAiTurn(){
+  const s=duelState;if(!s||s.active!=='ai')return;
+  const actions=[];
+  actions.push({t:'draw',msg:"L'IA pioche."});
+  const mh=s.a.hand.filter(c=>c.cardType==='Monster'&&(c.level||0)<=4);
+  const ez=s.a.mz.findIndex(x=>!x);
+  if(mh.length&&ez>=0)actions.push({t:'summon',card:mh[0],z:ez,msg:`L'IA invoque ${mh[0].name||'un monstre'}.`});
+  const sh=s.a.hand.filter(c=>c.cardType!=='Monster');
+  const es=s.a.sz.findIndex(x=>!x);
+  if(sh.length&&es>=0)actions.push({t:'set',card:sh[0],z:es,msg:"L'IA pose une carte."});
+  const atkers=s.a.mz.filter(Boolean);const pts=s.p.mz.filter(Boolean);
+  if(atkers.length){
+    if(!pts.length)actions.push({t:'datk',atk:atkers[0],msg:`L'IA attaque directement avec ${atkers[0].name||'son monstre'} !`});
+    else{const wk=pts.reduce((a,b)=>(a.atk||0)<(b.atk||0)?a:b);actions.push({t:'atk',atk:atkers[0],tgt:wk,msg:`L'IA attaque ${wk.name||'votre monstre'}.`});}
+  }
+  actions.push({t:'end',msg:"L'IA termine son tour."});
+
+  actions.forEach((act,i)=>{
+    setTimeout(()=>{
+      if(!duelState||duelState.active!=='ai')return;
+      if(act.t==='draw'){drawCard(duelState.a);}
+      else if(act.t==='summon'){const idx=duelState.a.hand.findIndex(c=>c.id===act.card.id);if(idx>=0){duelState.a.hand.splice(idx,1);duelState.a.mz[act.z]={...act.card,canAtk:true};}}
+      else if(act.t==='set'){const idx=duelState.a.hand.findIndex(c=>c.id===act.card.id);if(idx>=0){duelState.a.hand.splice(idx,1);duelState.a.sz[act.z]={...act.card,faceUp:false};}}
+      else if(act.t==='datk'){duelState.p.lp-=(act.atk.atk||0);}
+      else if(act.t==='atk'){
+        const aa=act.atk.atk||0,ba=act.tgt.atk||0;
+        if(aa>ba){const tz=duelState.p.mz.findIndex(m=>m&&m.id===act.tgt.id);if(tz>=0){duelState.p.mz[tz]=null;duelState.p.lp-=(aa-ba);}}
+        else if(aa<ba){const az=duelState.a.mz.findIndex(m=>m&&m.id===act.atk.id);if(az>=0){duelState.a.mz[az]=null;duelState.a.lp-=(ba-aa);}}
+        else{const tz=duelState.p.mz.findIndex(m=>m&&m.id===act.tgt.id);const az=duelState.a.mz.findIndex(m=>m&&m.id===act.atk.id);if(tz>=0)duelState.p.mz[tz]=null;if(az>=0)duelState.a.mz[az]=null;}
+      }
+      else if(act.t==='end'){duelState.active='player';duelState.phase='draw';duelState.turn++;}
+      addLog(act.msg);renderDuel();
+    },800*(i+1));
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+load();
+window._formCardType='Monster';
+setCardType('Monster');
+buildTagButtons();
+updateStats();
+document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+</script>
 </body>
 </html>
