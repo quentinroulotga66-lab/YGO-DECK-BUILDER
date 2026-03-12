@@ -211,6 +211,7 @@ header{
 .arrow-btn.active{background:#2a5a8a;border-color:#3a7abf;color:#fff;}
 .arrow-center{width:36px;height:36px;background:rgba(255,255,255,0.03);border-radius:5px;}
 .img-preview{margin-top:6px;width:72px;height:90px;object-fit:cover;border-radius:5px;border:1px solid rgba(255,255,255,0.18);}
+#img-dropzone.drag-over{border-color:rgba(240,192,64,0.8);background:rgba(240,192,64,0.07);}
 .modal-btns{display:flex;gap:8px;margin-top:4px;}
 
 /* ── DUEL ── */
@@ -491,12 +492,27 @@ header{
     </div>
     <div>
       <label class="form-label">IMAGE DE LA CARTE</label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input class="form-input" id="form-img-url" placeholder="URL (https://...)" oninput="previewImage()">
-        <button class="btn btn-ghost" onclick="document.getElementById('form-img-file').click()">📁</button>
+      <!-- Drop / Paste zone -->
+      <div id="img-dropzone"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event)"
+        onclick="document.getElementById('form-img-file').click()"
+        style="
+          position:relative;border:2px dashed rgba(240,192,64,0.3);border-radius:8px;
+          padding:14px 12px;cursor:pointer;text-align:center;transition:all 0.2s;
+          background:rgba(255,255,255,0.03);margin-bottom:8px;
+        ">
+        <div id="dropzone-content">
+          <div style="font-size:26px;margin-bottom:4px;">🖼️</div>
+          <div style="font-size:12px;color:rgba(240,192,64,0.7);font-family:'Cinzel',serif;font-weight:700;letter-spacing:0.5px;">GLISSER-DÉPOSER</div>
+          <div style="font-size:11px;color:rgba(232,223,192,0.35);margin-top:3px;">ou cliquer · ou Ctrl+V pour coller</div>
+        </div>
+        <img id="form-img-preview" style="display:none;width:100%;max-height:160px;object-fit:contain;border-radius:5px;">
+        <button id="img-clear-btn" onclick="event.stopPropagation();clearImage()" style="display:none;position:absolute;top:6px;right:6px;background:rgba(138,42,42,0.8);border:none;border-radius:50%;width:22px;height:22px;color:#fff;cursor:pointer;font-size:12px;line-height:1;">✕</button>
         <input type="file" id="form-img-file" accept="image/*" style="display:none" onchange="handleImageFile(event)">
       </div>
-      <img id="form-img-preview" class="img-preview" style="display:none">
+      <input class="form-input" id="form-img-url" placeholder="… ou colle une URL (https://...)" oninput="previewImage()" style="font-size:12px;">
     </div>
     <div class="modal-btns">
       <button class="btn btn-gold" onclick="saveCard()" style="flex:1;padding:10px 0;">💾 SAUVEGARDER</button>
@@ -731,9 +747,11 @@ function openCardForm(card=null){
   document.getElementById('form-pend-r').value=card?card.pendScaleR:8;
   document.getElementById('form-effect').value=card?card.effect:'';
   document.getElementById('form-img-url').value=card?card.imageUrl:'';
-  const prev=document.getElementById('form-img-preview');
-  if(card&&(card.imageData||card.imageUrl)){prev.src=card.imageData||card.imageUrl;prev.style.display='';}
-  else{prev.style.display='none';}
+  if(card&&(card.imageData||card.imageUrl)){
+    setTimeout(()=>setImagePreview(card.imageData||card.imageUrl),10);
+  } else {
+    setTimeout(()=>clearImage(),10);
+  }
   setCardType(card?card.cardType:'Monster');
   buildTagButtons();
   document.getElementById('modal-overlay').classList.add('open');
@@ -744,24 +762,70 @@ function deleteCard(id){cards=cards.filter(c=>c.id!==id);save();renderLibrary();
 
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
 
+function setImagePreview(src){
+  formImageData = src;
+  const prev = document.getElementById('form-img-preview');
+  const content = document.getElementById('dropzone-content');
+  const clearBtn = document.getElementById('img-clear-btn');
+  prev.src = src; prev.style.display = 'block';
+  content.style.display = 'none';
+  clearBtn.style.display = '';
+  document.getElementById('form-img-url').value = '';
+}
+
+function clearImage(){
+  formImageData = null;
+  const prev = document.getElementById('form-img-preview');
+  const content = document.getElementById('dropzone-content');
+  const clearBtn = document.getElementById('img-clear-btn');
+  prev.src = ''; prev.style.display = 'none';
+  content.style.display = '';
+  clearBtn.style.display = 'none';
+  document.getElementById('form-img-url').value = '';
+}
+
 function previewImage(){
-  const url=document.getElementById('form-img-url').value;
-  const prev=document.getElementById('form-img-preview');
-  if(url){prev.src=url;prev.style.display='';formImageData=null;}
-  else prev.style.display='none';
+  const url = document.getElementById('form-img-url').value;
+  if(url){ setImagePreview(url); formImageData = null; }
+  else clearImage();
 }
 
 function handleImageFile(e){
-  const file=e.target.files[0];if(!file)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    formImageData=ev.target.result;
-    const prev=document.getElementById('form-img-preview');
-    prev.src=formImageData;prev.style.display='';
-    document.getElementById('form-img-url').value='';
-  };
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ev => setImagePreview(ev.target.result);
   r.readAsDataURL(file);
 }
+
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('img-dropzone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(file && file.type.startsWith('image/')){
+    const r = new FileReader();
+    r.onload = ev => setImagePreview(ev.target.result);
+    r.readAsDataURL(file);
+    return;
+  }
+  // dragged image URL
+  const url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
+  if(url && url.startsWith('http')){ setImagePreview(url); formImageData = null; }
+}
+
+// Paste anywhere when modal is open
+document.addEventListener('paste', function(e){
+  if(!document.getElementById('modal-overlay').classList.contains('open')) return;
+  const items = e.clipboardData.items;
+  for(const item of items){
+    if(item.type.startsWith('image/')){
+      const file = item.getAsFile();
+      const r = new FileReader();
+      r.onload = ev => setImagePreview(ev.target.result);
+      r.readAsDataURL(file);
+      return;
+    }
+  }
+});
 
 function saveCard(){
   const cardType=window._formCardType||'Monster';
