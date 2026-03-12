@@ -455,7 +455,7 @@ header{
           <input class="form-input" type="number" id="form-level" min="1" max="12" value="4">
         </div>
         <div class="form-col" id="link-col" style="display:none;">
-          <label class="form-label">LINK RATING</label>
+          <label class="form-label">RATING DE LIEN</label>
           <input class="form-input" type="number" id="form-link-rating" min="1" max="8" value="1">
         </div>
       </div>
@@ -517,6 +517,17 @@ const CARD_COLORS = {Normal:'#c8a84b',Effect:'#d4774a',Fusion:'#9c5fa4',Ritual:'
 const MONSTER_TYPES = ['Normal','Effect','Fusion','Ritual','Synchro','XYZ','Pendulum','Link','Token'];
 const SPELL_TYPES = ['Normal','Quick-Play','Field','Equip','Continuous','Ritual'];
 const TRAP_TYPES = ['Normal','Continuous','Counter'];
+const FR = {
+  // Types monstres
+  'Normal':'Normal','Effect':'Effet','Fusion':'Fusion','Ritual':'Rituel',
+  'Synchro':'Synchro','XYZ':'XYZ','Pendulum':'Pendule','Link':'Lien','Token':'Jeton',
+  // Types magies
+  'Quick-Play':'Jeu Rapide','Field':'Terrain','Equip':'Équipement',
+  'Continuous':'Continue',
+  // Types pièges
+  'Counter':'Contre',
+  // Attributs (déjà en français/universel)
+};
 const LINK_ARROWS = [{id:'TL',l:'↖'},{id:'T',l:'↑'},{id:'TR',l:'↗'},{id:'L',l:'←'},{id:'R',l:'→'},{id:'BL',l:'↙'},{id:'B',l:'↓'},{id:'BR',l:'↘'}];
 const ARROW_GRID = ['TL','T','TR','L','X','R','BL','B','BR'];
 
@@ -537,9 +548,9 @@ function cardMiniHTML(card, opts={}){
   const noImg=`<div class="card-mini-noimg" style="${card.imageData||card.imageUrl?'display:none':''}">
     ${card.cardType==='Spell'?'✨':card.cardType==='Trap'?'⚠️':'⚔️'}</div>`;
   const isXYZ=card.monsterType==='XYZ';
-  const statsLine=card.cardType==='Monster'?(card.monsterType==='Link'?`LINK-${card.linkRating}`:`${card.atk}/${card.def}`):'';
+  const statsLine=card.cardType==='Monster'?(card.monsterType==='Link'?`LIEN-${card.linkRating}`:`${card.atk}/${card.def}`):'';
   const levelLine=card.cardType==='Monster'?(isXYZ?`Rang ${card.level||0}`:`Niv.${card.level||0}`):'';
-  const typeLine=card.cardType==='Monster'?card.monsterType:`${card.cardType}`;
+  const typeLine=card.cardType==='Monster'?(FR[card.monsterType]||card.monsterType):(card.cardType==='Spell'?'Magie':'Piège');
   const editBtns=opts.showEdit?`<div class="card-mini-btns">
     <button class="card-mini-btn card-mini-btn-edit" onclick="event.stopPropagation();editCard('${card.id}')">✏</button>
     <button class="card-mini-btn card-mini-btn-del" onclick="event.stopPropagation();deleteCard('${card.id}')">✕</button>
@@ -642,15 +653,15 @@ function buildTagButtons(){
   const mtags=document.getElementById('monster-tags');
   mtags.innerHTML=MONSTER_TYPES.map(t=>`<button class="tag${t===selectedMonsterType?' active':''}" 
     style="${t===selectedMonsterType?`background:${CARD_COLORS[t]||'#f0c040'}33;border-color:${CARD_COLORS[t]||'#f0c040'};color:#fff`:''}"
-    onclick="setMonsterType('${t}')">${t}</button>`).join('');
+    onclick="setMonsterType('${t}')">${FR[t]||t}</button>`).join('');
   const stags=document.getElementById('spell-tags');
   stags.innerHTML=SPELL_TYPES.map(t=>`<button class="tag${t===selectedSpellType?' active':''}"
     style="${t===selectedSpellType?'background:#1a6a4a33;border-color:#1a6a4a;color:#fff':''}"
-    onclick="setSpellType('${t}')">${t}</button>`).join('');
+    onclick="setSpellType('${t}')">${FR[t]||t}</button>`).join('');
   const ttags=document.getElementById('trap-tags');
   ttags.innerHTML=TRAP_TYPES.map(t=>`<button class="tag${t===selectedTrapType?' active':''}"
     style="${t===selectedTrapType?'background:#7a1a5a33;border-color:#7a1a5a;color:#fff':''}"
-    onclick="setTrapType('${t}')">${t}</button>`).join('');
+    onclick="setTrapType('${t}')">${FR[t]||t}</button>`).join('');
   buildArrowGrid();
 }
 
