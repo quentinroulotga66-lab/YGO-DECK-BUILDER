@@ -447,8 +447,13 @@ header{
         <div class="form-col">
           <label class="form-label">ATTRIBUT</label>
           <select class="form-input" id="form-attr" style="padding:6px 8px;">
-            <option>DARK</option><option>LIGHT</option><option>EARTH</option>
-            <option>WATER</option><option>FIRE</option><option>WIND</option><option>DIVINE</option>
+            <option value="DARK">🌑 TÉNÈBRES</option>
+            <option value="LIGHT">☀️ LUMIÈRE</option>
+            <option value="EARTH">🌍 TERRE</option>
+            <option value="WATER">💧 EAU</option>
+            <option value="FIRE">🔥 FEU</option>
+            <option value="WIND">🌀 VENT</option>
+            <option value="DIVINE">✨ DIVIN</option>
           </select>
         </div>
         <div class="form-col" id="level-col">
@@ -542,7 +547,9 @@ const FR = {
   'Continuous':'Continue',
   // Types pièges
   'Counter':'Contre',
-  // Attributs (déjà en français/universel)
+  // Attributs
+  'DARK':'🌑 TÉNÈBRES','LIGHT':'☀️ LUMIÈRE','EARTH':'🌍 TERRE',
+  'WATER':'💧 EAU','FIRE':'🔥 FEU','WIND':'🌀 VENT','DIVINE':'✨ DIVIN',
 };
 const LINK_ARROWS = [{id:'TL',l:'↖'},{id:'T',l:'↑'},{id:'TR',l:'↗'},{id:'L',l:'←'},{id:'R',l:'→'},{id:'BL',l:'↙'},{id:'B',l:'↓'},{id:'BR',l:'↘'}];
 const ARROW_GRID = ['TL','T','TR','L','X','R','BL','B','BR'];
@@ -567,6 +574,7 @@ function cardMiniHTML(card, opts={}){
   const statsLine=card.cardType==='Monster'?(card.monsterType==='Link'?`LIEN-${card.linkRating}`:`${card.atk}/${card.def}`):'';
   const levelLine=card.cardType==='Monster'?(isXYZ?`Rang ${card.level||0}`:`Niv.${card.level||0}`):'';
   const typeLine=card.cardType==='Monster'?(FR[card.monsterType]||card.monsterType):(card.cardType==='Spell'?'Magie':'Piège');
+  const attrLine=card.cardType==='Monster'?(FR[card.attribute]||card.attribute):'';
   const editBtns=opts.showEdit?`<div class="card-mini-btns">
     <button class="card-mini-btn card-mini-btn-edit" onclick="event.stopPropagation();editCard('${card.id}')">✏</button>
     <button class="card-mini-btn card-mini-btn-del" onclick="event.stopPropagation();deleteCard('${card.id}')">✕</button>
@@ -576,7 +584,7 @@ function cardMiniHTML(card, opts={}){
     ${editBtns}${imgHTML}${noImg}
     <div class="card-mini-info">
       <div class="card-mini-name">${card.name||'Sans nom'}</div>
-      <div class="card-mini-type">${typeLine}</div>
+      <div class="card-mini-type">${typeLine}${attrLine?' · '+attrLine:''}</div>
       ${levelLine?`<div class="card-mini-level">${levelLine}</div>`:''}
       ${statsLine?`<div class="card-mini-stats">${statsLine}</div>`:''}
     </div>
